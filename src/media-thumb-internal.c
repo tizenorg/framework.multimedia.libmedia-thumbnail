@@ -136,27 +136,21 @@ int _media_thumb_get_exif_info(ExifData *ed, char *buf, int max_size, int *value
 				tag == EXIF_TAG_PIXEL_Y_DIMENSION) {
 
 			if (value == NULL) {
-				thumb_dbg("value is NULL");
+				thumb_err("value is NULL");
 				return -1;
 			}
 
 			ExifByteOrder mByteOrder = exif_data_get_byte_order(ed);
 			short exif_value = exif_get_short(entry->data, mByteOrder);
-			thumb_dbg("%s : %d", exif_tag_get_name_in_ifd(tag,ifd), exif_value);
 			*value = (int)exif_value;
 		} else {
 			/* Get the contents of the tag in human-readable form */
 			if (buf == NULL) {
-				thumb_dbg("buf is NULL");
+				thumb_err("buf is NULL");
 				return -1;
 			}
 			exif_entry_get_value(entry, buf, max_size);
 			buf[strlen(buf)] = '\0';
-
-			if (*buf) {
-				thumb_dbg("%s: %s\n",
-					     exif_tag_get_name_in_ifd(tag, ifd), buf);
-			}
 		}
 	}
 
@@ -977,6 +971,17 @@ int _media_thumb_jpeg(const char *origin_path,
 		} else {
 			thumb_done = 1;
 			thumb_dbg("_media_thumb_get_thumb_from_exif succeed");
+
+			/* The case that original image's size is not in exif header. Use evas to get w/h */
+			if (thumb_info->origin_width == 0 || thumb_info->origin_height == 0) {
+				thumb_warn("original image's size is not in exif header. Use evas to get w/h");
+				err = _media_thumb_get_wh_with_evas(origin_path, &(thumb_info->origin_width), &(thumb_info->origin_height));
+				if (err < 0) {
+					thumb_err("Couldn't get w/h using evas : %s", origin_path);
+				} else {
+					thumb_warn("origin w : %d, origin h : %d", thumb_info->origin_width, thumb_info->origin_height);
+				}
+			}
 
 			mm_util_img_format dst_format = _media_thumb_get_format(format);
 

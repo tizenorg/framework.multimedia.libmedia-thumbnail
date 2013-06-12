@@ -162,8 +162,6 @@ AGifFrameInfo *ImgCreateAGIFFrame(const char *szFileName, unsigned int width,
 		return FALSE;
 	}
 
-	SysRequireEx(szFileName != NULL, FALSE);
-
 	hFile = DrmOpenFile(szFileName);
 	if (hFile == (HFile) INVALID_HOBJ) {
 		thumb_err("ImgCreateAGIFFrame: Cannot open file");

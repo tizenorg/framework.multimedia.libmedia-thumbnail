@@ -37,12 +37,13 @@ extern "C" {
 #define	IMG_MAX_IMAGE_FILE_SIZE			(10 * 1024 * 1024)
 
 //////////////////////////////////////////////////////////////
+#if 0
 #define ImgDebug(type, fmt, arg...)	\
 	do { \
 		fprintf(stderr, "[Media-SVC]"fmt, ##arg);	\
 	}while(0)
 	
-#if 1
+
 #define SysRequireEx(expr, retValue)	\
 	if (!(expr)) {																			\
 		fprintf(stderr, "[Media-SVC][%s] INVALID_PARAM (%d lines in %s)\n",__FUNCTION__,  __LINE__, __FILE__);  \
