@@ -616,6 +616,7 @@ int _media_thumb_decode_with_evas(const char *origin_path,
 
 	/* Set alpha from original */
 	thumb_info->alpha = evas_object_image_alpha_get(source_img);
+	if (thumb_info->alpha) ecore_evas_alpha_set(resize_img_ee, EINA_TRUE);
 
 	/* Create target buffer and copy origin resized img to it */
 	Ecore_Evas *target_ee = ecore_evas_buffer_new(
