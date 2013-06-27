@@ -42,10 +42,12 @@
 #define THUMB_PATH_PHONE 	MEDIA_ROOT_PATH_INTERNAL 	/**< File path prefix of files stored in phone */
 #define THUMB_PATH_MMC 		MEDIA_ROOT_PATH_SDCARD		/**< File path prefix of files stored in mmc card */
 
-#define THUMB_PHONE_PATH	MEDIA_DATA_PATH"/.thumb/phone"
-#define THUMB_MMC_PATH		MEDIA_DATA_PATH"/.thumb/mmc"
-
-#define THUMB_DEFAULT_PATH	MEDIA_DATA_PATH"/.thumb/thumb_default.png"
+//#define THUMB_PHONE_PATH	MEDIA_DATA_PATH"/.thumb/phone"
+//#define THUMB_MMC_PATH		MEDIA_DATA_PATH"/.thumb/mmc"
+//#define THUMB_DEFAULT_PATH	MEDIA_DATA_PATH"/.thumb/thumb_default.png"
+#define THUMB_PHONE_PATH       MEDIA_THUMB_ROOT_PATH"/.thumb/phone"
+#define THUMB_MMC_PATH         MEDIA_THUMB_ROOT_PATH"/.thumb/mmc"
+#define THUMB_DEFAULT_PATH     MEDIA_THUMB_ROOT_PATH"/.thumb/thumb_default.png"
 
 typedef enum
 {
