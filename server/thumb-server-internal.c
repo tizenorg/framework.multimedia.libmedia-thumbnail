@@ -389,7 +389,7 @@ gboolean _thumb_server_read_socket(GIOChannel *src,
 	if (sendto(sock, buf, buf_size, 0, (struct sockaddr *)&client_addr, sizeof(client_addr)) != buf_size) {
 		thumb_err("sendto failed: %s\n", strerror(errno));
 		SAFE_FREE(buf);
-		return FALSE;
+		return TRUE;
 	}
 #endif
 
@@ -409,16 +409,23 @@ gboolean _thumb_server_read_socket(GIOChannel *src,
 gboolean _thumb_server_send_msg_to_agent(int msg_type)
 {
 	int sock;
-	const char *serv_ip = "127.0.0.1";
 #ifdef _USE_UDS_SOCKET_
+	ms_sock_info_s sock_info;
 	struct sockaddr_un serv_addr;
 #else
+	const char *serv_ip = "127.0.0.1";
 	struct sockaddr_in serv_addr;
 #endif
 	ms_thumb_server_msg send_msg;
-
+#if 0
+	/* Creaete a UDP socket */
+	if (_media_thumb_create_udp_socket(&sock) < 0) {
+		thumb_err("_media_thumb_create_udp_socket failed");
+		return FALSE;
+	}
+#endif
 #ifdef _USE_UDS_SOCKET_
-	if (ms_ipc_create_client_socket(MS_PROTOCOL_UDP, MS_TIMEOUT_SEC_10, &sock, MS_THUMB_COMM_PORT) < 0) {
+	if (ms_ipc_create_client_socket(MS_PROTOCOL_UDP, MS_TIMEOUT_SEC_10, &sock_info) < 0) {
 #else
 	if (ms_ipc_create_client_socket(MS_PROTOCOL_UDP, MS_TIMEOUT_SEC_10, &sock) < 0) {
 #endif
@@ -428,8 +435,9 @@ gboolean _thumb_server_send_msg_to_agent(int msg_type)
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 #ifdef _USE_UDS_SOCKET_
+	sock = sock_info.sock_fd;
 	serv_addr.sun_family = AF_UNIX;
-	strcpy(serv_addr.sun_path, "/tmp/media_ipc_thumbcomm.dat");
+	strcpy(serv_addr.sun_path, "/tmp/.media_ipc_thumbcomm");
 #else
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = inet_addr(serv_ip);
@@ -440,13 +448,21 @@ gboolean _thumb_server_send_msg_to_agent(int msg_type)
 
 	if (sendto(sock, &send_msg, sizeof(ms_thumb_server_msg), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) != sizeof(ms_thumb_server_msg)) {
 		thumb_err("sendto failed: %s\n", strerror(errno));
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
 		close(sock);
+#endif
 		return FALSE;
 	}
 
 	thumb_dbg("Sending msg to thumbnail agent[%d] is successful", send_msg.msg_type);
 
-	close(sock);
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
+		close(sock);
+#endif
  	return TRUE;
 }
 #endif
@@ -468,6 +484,13 @@ gboolean _thumb_server_prepare_socket(int *sock_fd)
 		thumb_err("ms_ipc_create_server_socket failed");
 		return FALSE;
 	}
+#if 0
+	/* Creaete a UDP socket */
+	if (_media_thumb_create_udp_socket(&sock) < 0) {
+		thumb_err("_media_thumb_create_udp_socket failed");
+		return FALSE;
+	}
+#endif
 #else
 	char thumb_path[MAX_PATH_SIZE + 1];
 #ifdef _USE_UDS_SOCKET_

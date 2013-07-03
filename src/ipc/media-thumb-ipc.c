@@ -195,7 +195,7 @@ _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg)
 	buf = (unsigned char*)malloc(header_size);
 
 	if ((recv_msg_len = recv(sock, buf, header_size, 0)) <= 0) {
-		thumb_err("recvfrom failed : %s", strerror(errno));
+		thumb_err("recv failed : %s", strerror(errno));
 		SAFE_FREE(buf);
 		return _media_thumb_get_error();
 	}
@@ -208,7 +208,7 @@ _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg)
 	buf = (unsigned char*)malloc(msg->origin_path_size);
 
 	if ((recv_msg_len = recv(sock, buf, msg->origin_path_size, 0)) < 0) {
-		thumb_err("recvfrom failed : %s", strerror(errno));
+		thumb_err("recv failed : %s", strerror(errno));
 		SAFE_FREE(buf);
 		return _media_thumb_get_error();
 	}
@@ -220,7 +220,7 @@ _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg)
 	buf = (unsigned char*)malloc(msg->dest_path_size);
 
 	if ((recv_msg_len = recv(sock, buf, msg->dest_path_size, 0)) < 0) {
-		thumb_err("recvfrom failed : %s", strerror(errno));
+		thumb_err("recv failed : %s", strerror(errno));
 		SAFE_FREE(buf);
 		return _media_thumb_get_error();
 	}
@@ -231,6 +231,7 @@ _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg)
 	SAFE_FREE(buf);
 	return MEDIA_THUMB_ERROR_NONE;
 }
+
 
 #ifdef _USE_UDS_SOCKET_
 int
@@ -249,6 +250,7 @@ _media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct socka
 	unsigned char *buf = NULL;
 
 	buf = (unsigned char*)malloc(sizeof(thumbMsg));
+	//thumb_dbg("header size : %d", header_size);
 
 	if ((recv_msg_len = recvfrom(sock, buf, sizeof(thumbMsg), 0, (struct sockaddr *)from_addr, &from_addr_size)) < 0) {
 		thumb_err("recvfrom failed : %s", strerror(errno));
@@ -317,8 +319,7 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 	int sock;
 #ifdef _USE_UDS_SOCKET_
 	struct sockaddr_un serv_addr;
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	struct sockaddr_un serv_addr;
+	ms_sock_info_s sock_info;
 #else
 	const char *serv_ip = "127.0.0.1";
 	struct sockaddr_in serv_addr;
@@ -331,9 +332,7 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 
 #ifdef _USE_MEDIA_UTIL_
 #ifdef _USE_UDS_SOCKET_
-	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock, MS_THUMB_CREATOR_PORT) < 0) {
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	if (ms_ipc_create_client_tcp_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock, MS_THUMB_CREATOR_TCP_PORT) < 0) {
+	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock_info) < 0) {
 #else
 	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock) < 0) {
 #endif
@@ -350,20 +349,15 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 #ifdef _USE_UDS_SOCKET_
-	serv_addr.sun_family = AF_UNIX;
-#elif defined(_USE_UDS_SOCKET_TCP_)
+	sock = sock_info.sock_fd;
 	serv_addr.sun_family = AF_UNIX;
 #else
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = inet_addr(serv_ip);
 #endif
-
 #ifdef _USE_MEDIA_UTIL_
 #ifdef _USE_UDS_SOCKET_
-	strcpy(serv_addr.sun_path, "/tmp/media_ipc_thumbcreator.dat");
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	thumb_dbg("");
-	strcpy(serv_addr.sun_path, "/tmp/media_ipc_thumbcreator.dat");
+	strcpy(serv_addr.sun_path, "/tmp/.media_ipc_thumbcreator");
 #else
 	serv_addr.sin_port = htons(MS_THUMB_CREATOR_PORT);
 #endif
@@ -374,6 +368,11 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 	/* Connecting to the thumbnail server */
 	if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
 		thumb_err("connect error : %s", strerror(errno));
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
+		close(sock);
+#endif
 		return MEDIA_THUMB_ERROR_NETWORK;
 	}
 
@@ -403,7 +402,11 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 
 	if (req_msg.origin_path_size > MAX_PATH_SIZE || req_msg.dest_path_size > MAX_PATH_SIZE) {
 		thumb_err("path's length exceeds %d", MAX_PATH_SIZE);
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
 		close(sock);
+#endif
 		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
 	}
 
@@ -417,7 +420,11 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 	if (send(sock, buf, buf_size, 0) != buf_size) {
 		thumb_err("sendto failed: %d\n", errno);
 		SAFE_FREE(buf);
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
 		close(sock);
+#endif
 		return MEDIA_THUMB_ERROR_NETWORK;
 	}
 
@@ -427,14 +434,22 @@ _media_thumb_request(int msg_type, media_thumb_type thumb_type, const char *orig
 
 	if ((err = _media_thumb_recv_msg(sock, header_size, &recv_msg)) < 0) {
 		thumb_err("_media_thumb_recv_msg failed ");
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
 		close(sock);
+#endif
 		return err;
 	}
 
 	recv_str_len = strlen(recv_msg.org_path);
 	thumb_dbg("recv %s(%d) from thumb daemon is successful", recv_msg.org_path, recv_str_len);
 
-	close(sock);
+#ifdef _USE_UDS_SOCKET_
+		ms_ipc_delete_client_socket(&sock_info);
+#else
+		close(sock);
+#endif
 
 	if (recv_str_len > max_length) {
 		thumb_err("user buffer is too small. Output's length is %d", recv_str_len);
@@ -667,8 +682,7 @@ _media_thumb_request_async(int msg_type, media_thumb_type thumb_type, const char
 	int sock;
 #ifdef _USE_UDS_SOCKET_
 	struct sockaddr_un serv_addr;
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	struct sockaddr_un serv_addr;
+	ms_sock_info_s sock_info;
 #else
 	const char *serv_ip = "127.0.0.1";
 	struct sockaddr_in serv_addr;
@@ -681,16 +695,16 @@ _media_thumb_request_async(int msg_type, media_thumb_type thumb_type, const char
 	}
 
 #ifdef _USE_MEDIA_UTIL_
+
 #ifdef _USE_UDS_SOCKET_
-	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock, MS_THUMB_CREATOR_PORT) < 0) {
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	if (ms_ipc_create_client_tcp_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock, MS_THUMB_CREATOR_TCP_PORT) < 0) {
+	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock_info) < 0) {
 #else
 	if (ms_ipc_create_client_socket(MS_PROTOCOL_TCP, MS_TIMEOUT_SEC_10, &sock) < 0) {
 #endif
 		thumb_err("ms_ipc_create_client_socket failed");
 		return MEDIA_THUMB_ERROR_NETWORK;
 	}
+
 #else
 	/* Creaete a TCP socket */
 	if (_media_thumb_create_socket(CLIENT_SOCKET, &sock) < 0) {
@@ -699,15 +713,9 @@ _media_thumb_request_async(int msg_type, media_thumb_type thumb_type, const char
 	}
 #endif
 
-	GIOChannel *channel = NULL;
-	channel = g_io_channel_unix_new(sock);
-	int source_id = -1;
-
-
 	memset(&serv_addr, 0, sizeof(serv_addr));
 #ifdef _USE_UDS_SOCKET_
-	serv_addr.sun_family = AF_UNIX;
-#elif defined(_USE_UDS_SOCKET_TCP_)
+	sock = sock_info.sock_fd;
 	serv_addr.sun_family = AF_UNIX;
 #else
 	serv_addr.sin_family = AF_INET;
@@ -715,16 +723,20 @@ _media_thumb_request_async(int msg_type, media_thumb_type thumb_type, const char
 #endif
 
 #ifdef _USE_MEDIA_UTIL_
+
 #ifdef _USE_UDS_SOCKET_
-	strcpy(serv_addr.sun_path, "/tmp/media_ipc_thumbcreator.dat");
-#elif defined(_USE_UDS_SOCKET_TCP_)
-	strcpy(serv_addr.sun_path, "/tmp/media_ipc_thumbcreator.dat");
+	strcpy(serv_addr.sun_path, "/tmp/.media_ipc_thumbcreator");
 #else
 	serv_addr.sin_port = htons(MS_THUMB_CREATOR_PORT);
 #endif
+
 #else
 	serv_addr.sin_port = htons(THUMB_DAEMON_PORT);
 #endif
+
+	GIOChannel *channel = NULL;
+	channel = g_io_channel_unix_new(sock);
+	int source_id = -1;
 
 	/* Connecting to the thumbnail server */
 	if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -741,6 +753,7 @@ _media_thumb_request_async(int msg_type, media_thumb_type thumb_type, const char
 		source = g_io_create_watch(channel, G_IO_IN);
 
 		/* Set callback to be called when socket is readable */
+		/*NEED UPDATE SOCKET FILE DELETE*/
 		g_source_set_callback(source, (GSourceFunc)_media_thumb_write_socket, userData, NULL);
 		source_id = g_source_attach(source, g_main_context_get_thread_default());
 	}
