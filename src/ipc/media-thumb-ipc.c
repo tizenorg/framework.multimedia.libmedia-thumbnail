@@ -205,6 +205,16 @@ _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg)
 
 	SAFE_FREE(buf);
 
+	if (!(msg->origin_path_size > 0 && msg->origin_path_size < MAX_PATH_SIZE)) {
+		thumb_err("origin path size is wrong [%d]", msg->origin_path_size);
+		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
+	}
+
+	if (!(msg->dest_path_size > 0 && msg->dest_path_size < MAX_PATH_SIZE)) {
+		thumb_err("destination path size is wrong [%d]", msg->dest_path_size);
+		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
+	}
+
 	buf = (unsigned char*)malloc(msg->origin_path_size);
 
 	if ((recv_msg_len = recv(sock, buf, msg->origin_path_size, 0)) < 0) {
@@ -263,7 +273,7 @@ _media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct socka
 	if (msg->origin_path_size <= 0  || msg->origin_path_size > MAX_PATH_SIZE) {
 		SAFE_FREE(buf);
 		thumb_err("msg->origin_path_size is invalid %d", msg->origin_path_size );
-		return MEDIA_THUMB_ERROR_NETWORK;
+		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
 	}
 
 	strncpy(msg->org_path, (char*)buf + header_size, msg->origin_path_size);
@@ -272,7 +282,7 @@ _media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct socka
 	if (msg->dest_path_size <= 0  || msg->dest_path_size > MAX_PATH_SIZE) {
 		SAFE_FREE(buf);
 		thumb_err("msg->origin_path_size is invalid %d", msg->dest_path_size );
-		return MEDIA_THUMB_ERROR_NETWORK;
+		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
 	}
 
 	strncpy(msg->dst_path, (char*)buf + header_size + msg->origin_path_size, msg->dest_path_size);
