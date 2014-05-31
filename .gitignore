@@ -1,0 +1,12 @@
+build-stamp
+cmake_build_tmp/
+configure-stamp
+debian/files
+debian/*.debhelper.log
+debian/*.install
+debian/*.debhelper
+debian/*.substvars
+debian/libmedia-info-dbg/
+debian/libmedia-info-dev/
+debian/libmedia-info/
+debian/tmp/
