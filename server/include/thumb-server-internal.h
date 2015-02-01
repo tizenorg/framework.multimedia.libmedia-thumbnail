@@ -50,6 +50,7 @@ void _thumb_daemon_finish_jobs(void);
 void _thumb_daemon_power_off_cb(void* data);
 void _thumb_daemon_mmc_eject_vconf_cb(keynode_t *key, void* data);
 void _thumb_daemon_vconf_cb(keynode_t *key, void* data);
+void _thumb_daemon_camera_vconf_cb(keynode_t *key, void* data);
 gboolean _thumb_server_prepare_socket(int *sock_fd);
 gboolean _thumb_server_read_socket(GIOChannel *src, GIOCondition condition, gpointer data);
 bool	_thumb_sever_set_power_mode(_server_status_e status);
@@ -60,6 +61,7 @@ int _thumb_sever_poweoff_event_receiver(power_off_cb user_callback, void *user_d
 int _thumbnail_get_data(const char *origin_path,
 						media_thumb_type thumb_type,
 						media_thumb_format format,
+						char *thumb_path,
 						unsigned char **data,
 						int *size,
 						int *width,

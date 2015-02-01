@@ -1,6 +1,6 @@
 Name:       libmedia-thumbnail
 Summary:    Media thumbnail service library for multimedia applications.
-Version: 0.1.102
+Version: 0.1.116
 Release:    1
 Group:      utils
 License:    Apache license v2.0 and public domain
@@ -12,7 +12,6 @@ BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(mm-fileinfo)
 BuildRequires: pkgconfig(mmutil-imgp)
 BuildRequires: pkgconfig(mmutil-jpeg)
-BuildRequires: pkgconfig(drm-client)
 BuildRequires: pkgconfig(libexif)
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(ecore)
@@ -21,12 +20,8 @@ BuildRequires: pkgconfig(vconf)
 BuildRequires: pkgconfig(libmedia-utils)
 BuildRequires: pkgconfig(dbus-glib-1)
 #exclude tizen_w
-%if %{_repository} == "wearable"
 BuildRequires: pkgconfig(deviced)
-%else
-BuildRequires: pkgconfig(pmapi)
-%endif
-
+BuildRequires:  pkgconfig(capi-appfw-application)
 
 %description
 Description: Media thumbnail service library for multimedia applications.
@@ -63,11 +58,7 @@ export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
 export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
 
-cmake \
-%if %{_repository} == "wearable"
-	-DTIZEN_W=YES \
-%endif
-	. -DCMAKE_INSTALL_PREFIX=%{_prefix}
+cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix}
 
 make %{?jobs:-j%jobs}
 

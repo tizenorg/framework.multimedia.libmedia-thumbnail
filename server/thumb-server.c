@@ -73,6 +73,11 @@ int main(void)
 	if (err == -1)
 		thumb_err("vconf_notify_key_changed : %s fails", VCONFKEY_SYSMAN_MMC_STATUS);
 
+	/* Set VCONFKEY_CAMERA_STATE callback to get status of camera */
+	err = vconf_notify_key_changed(VCONFKEY_CAMERA_STATE, (vconf_callback_fn) _thumb_daemon_camera_vconf_cb, NULL);
+	if (err == -1)
+		thumb_err("vconf_notify_key_changed : %s fails", VCONFKEY_CAMERA_STATE);
+
 	/* Create and bind new UDP socket */
 	if (!_thumb_server_prepare_socket(&sockfd)) {
 		thumb_err("Failed to create socket");
@@ -105,7 +110,7 @@ int main(void)
 	thumb_dbg("*** Thumbnail server is running ***");
 	thumb_dbg("************************************");
 
-#if 0
+#if 1
 	if (_thumb_sever_set_power_mode(THUMB_START) == FALSE)
 		thumb_err("_thumb_sever_set_power_mode failed");
 #endif

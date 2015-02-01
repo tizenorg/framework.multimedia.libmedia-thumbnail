@@ -28,11 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <Ecore_Evas.h>
-#ifdef TIZEN_W
 #include <dd-display.h>
-#else
-#include <pmapi.h>
-#endif
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
@@ -48,8 +44,13 @@ static __thread int g_cur_idx = 0;
 
 GMainLoop *g_thumb_server_mainloop; // defined in thumb-server.c as extern
 
+guint g_source_id;
+bool g_extract_all_status;
+
 static gboolean __thumb_server_send_msg_to_agent(int msg_type);
 static void __thumb_daemon_stop_job(void);
+static int __thumb_daemon_all_extract(void);
+int _thumb_daemon_process_queue_jobs(gpointer data);
 
 gboolean _thumb_daemon_start_jobs(gpointer data)
 {
@@ -168,6 +169,42 @@ void _thumb_daemon_vconf_cb(keynode_t *key, void* data)
 	return;
 }
 
+void _thumb_daemon_camera_vconf_cb(keynode_t *key, void* data)
+{
+	int err = -1;
+	int camera_state = -1;
+
+	err = vconf_get_int(VCONFKEY_CAMERA_STATE, &camera_state);
+	if (err == 0) {
+		thumb_dbg("camera state: %d", camera_state);
+	} else {
+		thumb_err("vconf_get_int failed: %d", err);
+		return;
+	}
+
+	if (camera_state >= VCONFKEY_CAMERA_STATE_PREVIEW) {
+		thumb_warn("CAMERA is running. Do not create thumbnail");
+
+		if (g_source_id > 0) {
+			__thumb_daemon_stop_job();
+			g_source_remove(g_source_id);
+			g_source_id = 0;
+		}
+		thumb_warn("q_source_id = %d", g_source_id);
+	} else {
+		if (g_extract_all_status == true) {
+			/*add queue job again*/
+			thumb_warn("q_source_id = %d", g_source_id);
+			if (g_source_id == 0) {
+				__thumb_daemon_all_extract();
+				g_source_id = g_idle_add(_thumb_daemon_process_queue_jobs, NULL);
+			}
+		}
+	}
+
+	return;
+}
+
 static void __thumb_daemon_stop_job()
 {
 	int i = 0;
@@ -187,9 +224,6 @@ static int __thumb_daemon_process_job(thumbMsg *req_msg, thumbMsg *res_msg)
 {
 	int err = -1;
 
-	if (_thumb_sever_set_power_mode(THUMB_START) == FALSE)
-		thumb_err("_thumb_sever_set_power_mode failed");
-
 	err = _media_thumb_process(req_msg, res_msg);
 	if (err < 0) {
 		if (req_msg->msg_type == THUMB_REQUEST_SAVE_FILE) {
@@ -207,9 +241,6 @@ static int __thumb_daemon_process_job(thumbMsg *req_msg, thumbMsg *res_msg)
 	} else {
 		res_msg->status = THUMB_SUCCESS;
 	}
-
-	if (_thumb_sever_set_power_mode(THUMB_END) == FALSE)
-		thumb_err("_thumb_sever_set_power_mode failed");
 
 	return err;
 }
@@ -239,7 +270,7 @@ static int __thumb_daemon_all_extract(void)
 	} else {
 		snprintf(query_string, sizeof(query_string), SELECT_PATH_FROM_UNEXTRACTED_THUMB_INTERNAL_MEDIA);
 	}
-	
+
 	thumb_warn("Query: %s", query_string);
 
 	err = sqlite3_prepare_v2(sqlite_db_handle, query_string, strlen(query_string), &sqlite_stmt, NULL);
@@ -274,6 +305,22 @@ static int __thumb_daemon_all_extract(void)
 	_media_thumb_db_disconnect();
 
 	return MEDIA_THUMB_ERROR_NONE;
+}
+
+ static int __thumb_daemon_get_camera_state()
+{
+	int err = -1;
+	int camera_state = -1;
+
+	err = vconf_get_int(VCONFKEY_CAMERA_STATE, &camera_state);
+	if (err == 0) {
+		thumb_dbg("camera state: %d", camera_state);
+		return camera_state;
+	} else {
+		thumb_err("vconf_get_int failed: %d", err);
+	}
+
+	return camera_state;
 }
 
 int _thumb_daemon_process_queue_jobs(gpointer data)
@@ -329,6 +376,7 @@ int _thumb_daemon_process_queue_jobs(gpointer data)
 		//_media_thumb_db_disconnect();
 
 		__thumb_server_send_msg_to_agent(MS_MSG_THUMB_EXTRACT_ALL_DONE); // MS_MSG_THUMB_EXTRACT_ALL_DONE
+		g_source_id = 0;
 
 		return FALSE;
 	}
@@ -368,9 +416,14 @@ gboolean _thumb_server_read_socket(GIOChannel *src,
 
 	if (recv_msg.msg_type == THUMB_REQUEST_ALL_MEDIA) {
 		if (g_idx == 0) {
-			thumb_warn("All thumbnails are being extracted now");
-			__thumb_daemon_all_extract();
-			g_idle_add(_thumb_daemon_process_queue_jobs, NULL);
+			if (__thumb_daemon_get_camera_state() < VCONFKEY_CAMERA_STATE_PREVIEW) {
+				if (g_source_id == 0) {
+					thumb_warn("All thumbnails are being extracted now");
+					__thumb_daemon_all_extract();
+					g_source_id = g_idle_add(_thumb_daemon_process_queue_jobs, NULL);
+				}
+			}
+			g_extract_all_status = true;
 		} else {
 			thumb_warn("All thumbnails are already being extracted.");
 		}
@@ -404,7 +457,7 @@ gboolean _thumb_server_read_socket(GIOChannel *src,
 
 	if(recv_msg.msg_type == THUMB_REQUEST_KILL_SERVER) {
 		thumb_warn("Shutting down...");
-#if 0
+#if 1
 		if (_thumb_sever_set_power_mode(THUMB_END) == FALSE)
 			thumb_err("_thumb_sever_set_power_mode failed");
 #endif
@@ -476,20 +529,12 @@ bool _thumb_sever_set_power_mode(_server_status_e status)
 
 	switch (status) {
 	case THUMB_START:
-#ifdef TIZEN_W
 		err = display_lock_state(LCD_OFF, STAY_CUR_STATE, 0);
-#else
-		err = pm_lock_state(LCD_OFF, STAY_CUR_STATE, 0);
-#endif
 		if (err != 0)
 			res = FALSE;
 		break;
 	case THUMB_END:
-#ifdef TIZEN_W
 		err = display_unlock_state(LCD_OFF, STAY_CUR_STATE);
-#else
-		err = pm_unlock_state(LCD_OFF, STAY_CUR_STATE);
-#endif
 		if (err != 0)
 			res = FALSE;
 		break;
@@ -608,6 +653,7 @@ int _thumb_sever_poweoff_event_receiver(power_off_cb user_callback, void *user_d
 int _thumbnail_get_data(const char *origin_path,
 						media_thumb_type thumb_type,
 						media_thumb_format format,
+						char *thumb_path,
 						unsigned char **data,
 						int *size,
 						int *width,
@@ -659,10 +705,10 @@ int _thumbnail_get_data(const char *origin_path,
 
 	if (file_type == THUMB_IMAGE_TYPE) {
 		if (is_drm) {
-			thumb_err("DRM file is not supported");
+			thumb_err("DRM IMAGE IS NOT SUPPORTED");
 			return MEDIA_THUMB_ERROR_UNSUPPORTED;
 		} else {
-			err = _media_thumb_image(origin_path, thumb_width, thumb_height, format, &thumb_info);
+			err = _media_thumb_image(origin_path, thumb_path, thumb_width, thumb_height, format, &thumb_info);
 			if (err < 0) {
 				thumb_err("_media_thumb_image failed");
 				return err;
@@ -774,20 +820,20 @@ _media_thumb_process(thumbMsg *req_msg, thumbMsg *res_msg)
 
 	thumb_dbg_slog("Thumb path : %s", thumb_path);
 
-	if (g_file_test(thumb_path,
-					G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
+	if (g_file_test(thumb_path, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
 		thumb_warn("thumb path already exists in file system.. remove the existed file");
 		_media_thumb_remove_file(thumb_path);
 	}
 
-	err = _thumbnail_get_data(origin_path, thumb_type, thumb_format, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h, &alpha, &is_saved);
+	err = _thumbnail_get_data(origin_path, thumb_type, thumb_format, thumb_path, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h, &alpha, &is_saved);
 	if (err < 0) {
 		thumb_err("_thumbnail_get_data failed - %d", err);
 		SAFE_FREE(data);
 
 		strncpy(thumb_path, THUMB_DEFAULT_PATH, max_length);
-		_media_thumb_db_disconnect();
-		return err;
+		goto DB_UPDATE;
+//		_media_thumb_db_disconnect();
+//		return err;
 	}
 
 	//thumb_dbg("Size : %d, W:%d, H:%d", thumb_size, thumb_w, thumb_h);
@@ -814,7 +860,7 @@ _media_thumb_process(thumbMsg *req_msg, thumbMsg *res_msg)
 		thumb_dbg_slog("Thumb path is changed : %s", thumb_path);
 	}
 
-	if (is_saved == FALSE) {
+	if (is_saved == FALSE && data != NULL) {
 		err = _media_thumb_save_to_file_with_evas(data, thumb_w, thumb_h, alpha, thumb_path);
 		if (err < 0) {
 			thumb_err("save_to_file_with_evas failed - %d", err);
@@ -848,7 +894,7 @@ _media_thumb_process(thumbMsg *req_msg, thumbMsg *res_msg)
 	/* End of fsync */
 
 	SAFE_FREE(data);
-
+DB_UPDATE:
 	/* DB update if needed */
 	if (need_update_db == 1) {
 		err = _media_thumb_update_db(origin_path, thumb_path, res_msg->origin_width, res_msg->origin_height);

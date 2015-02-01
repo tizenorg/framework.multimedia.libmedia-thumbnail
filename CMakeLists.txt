@@ -5,7 +5,7 @@ SET(VERSION "${VERSION_MAJOR}.0.0")
 
 SET(MEDIATHUMB-LIB "media-thumbnail")
 SET(MEDIAHASH-LIB "media-hash")
-SET(SRCS 
+SET(SRCS
 	src/media-thumbnail.c
 	src/util/media-thumb-debug.c
 	src/util/media-thumb-util.c
@@ -46,12 +46,7 @@ MESSAGE("Build type: ${CMAKE_BUILD_TYPE}")
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/include/util ${CMAKE_SOURCE_DIR}/src/include/codec ${CMAKE_SOURCE_DIR}/src/include/util ${CMAKE_SOURCE_DIR}/src/include/ipc ${CMAKE_SOURCE_DIR}/server/include ${CMAKE_SOURCE_DIR}/md5)
 
 INCLUDE(FindPkgConfig)
-
-IF ( TIZEN_W )
-pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 dlog mm-fileinfo drm-client aul libexif ecore-evas evas mmutil-imgp mmutil-jpeg libmedia-utils vconf dbus-glib-1 deviced)
-ELSE ( TIZEN_W )
-pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 dlog mm-fileinfo drm-client aul libexif ecore-evas evas mmutil-imgp mmutil-jpeg libmedia-utils vconf dbus-glib-1 pmapi)
-ENDIF ( TIZEN_W )
+	pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 dlog mm-fileinfo aul libexif ecore-evas evas mmutil-imgp mmutil-jpeg libmedia-utils vconf dbus-glib-1 deviced)
 
 FOREACH(flag ${pkgs_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
@@ -74,9 +69,6 @@ ADD_DEFINITIONS("-DPACKAGE_NAME=\"${PKGNAME}\"")
 ADD_DEFINITIONS("-DPREFIX=\"${PREFIX}\"")
 #ADD_DEFINITIONS("-D_PERFORMANCE_CHECK_")
 ADD_DEFINITIONS("-D_FILE_OFFSET_BITS=64")
-IF ( TIZEN_W )
-ADD_DEFINITIONS("-DTIZEN_W")
-ENDIF ( TIZEN_W )
 
 SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--hash-style=both")
 CONFIGURE_FILE(media-thumbnail.pc.in media-thumbnail.pc @ONLY)

@@ -43,7 +43,7 @@ AGifFrameInfo *FastImgCreateAGIFFrameData(unsigned int width, unsigned int heigh
 	int transIndex = 0;
 	int inputPos = 0;
 
-    AGifFrameInfo *pFrameData;
+	AGifFrameInfo *pFrameData;
 	if (0 == (pFrameData = IfegMemAlloc(sizeof(AGifFrameInfo)))) {
 		return 0;
 	}
@@ -106,7 +106,7 @@ AGifFrameInfo *FastImgCreateAGIFFrameData(unsigned int width, unsigned int heigh
 		backcolor_parsing = (unsigned short)((pEncodedData[inputPos+backcolor_index*3] >> 3)<<11) | ((pEncodedData[inputPos+backcolor_index*3+1] >> 2)<<5) | (pEncodedData[inputPos+backcolor_index*3+2] >> 3);
 	}
 
-    /* graphic extension block */
+	/* graphic extension block */
 	if (pEncodedData[14+header_temp] == 0xF9 || pEncodedData[14+19+header_temp] == 0xF9) {
 
 		if (transparent == 1 && backcolor_index == transIndex) {
@@ -502,9 +502,16 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 	unsigned short *prefix = pFrameData->pPrefix;			
 	unsigned char *dstack = pFrameData->pDstack;			
 	unsigned char *suffix = pFrameData->pSuffix;		
+	unsigned char *done_prefix = 0;
 
 	inputPos = pFrameData->offset;
 
+	done_prefix = IfegMemAlloc(sizeof(unsigned char)*(MAX_CODES+1));
+	if (done_prefix == 0)
+	{
+		thumb_err("Failed to allocate memory for check buffer.");
+		return -1;
+	}
 	IfegMemset(prefix, 0, sizeof(unsigned short)*(MAX_CODES+1));
 	IfegMemset(dstack, 0, sizeof(unsigned char)*(MAX_CODES+1));
 	IfegMemset(suffix, 0, sizeof(unsigned char)*(MAX_CODES+1));
@@ -538,6 +545,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				IfegMemFree(pDecBuf);
 				pDecBuf = 0;
 			}
+			IfegMemFree(done_prefix);
+			done_prefix = 0;
 			return -1;
 		}
 
@@ -564,6 +573,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				IfegMemFree(pDecBuf);
 				pDecBuf = 0;
 			}
+			IfegMemFree(done_prefix);
+			done_prefix = 0;
 			return 0;
 		}
 
@@ -637,8 +648,12 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				for (i = 0; i < expected_width * expected_height; i++) {
 					*pImage16++ = ui_backcolor;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 1;
 			} else {
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 0;
 			}
 		}
@@ -654,6 +669,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				pDecBuf = 0;
 			}
 			if (pFrameData->imgCount == 0) {
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return -1;
 			}
 			pFrameData->imgCount = 0;
@@ -666,7 +683,7 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 			if (pFrameData->nLoopCount == -1) {
 				break;
 			} else if (pFrameData->bLoop || (pFrameData->nRepeatCount <= pFrameData->nLoopCount) || (pFrameData->nLoopCount == 0)) {
-			    /* Background Color */
+				/* Background Color */
 				pImage16 = (unsigned short *)pFrameData->pPrevImg;
 
 				for (i = 0; i < expected_width * expected_height; i++) {
@@ -677,6 +694,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				continue;
 			} else {
 				/* if there is last frame and bLoop is FALSE, return 2. */
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 2;
 			}
 #else
@@ -686,8 +705,12 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				for (i = 0; i < expected_width * expected_height; i++) {
 					*pImage16++ = backcolor;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 1;
 			} else {
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 0;
 			}
 #endif
@@ -704,6 +727,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 						IfegMemFree(pDecBuf);
 						pDecBuf = 0;
 					}
+					IfegMemFree(done_prefix);
+					done_prefix = 0;
 					return -1;
 				}
 
@@ -727,6 +752,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 							IfegMemFree(pDecBuf);
 							pDecBuf = 0;
 						}
+						IfegMemFree(done_prefix);
+						done_prefix = 0;
 						return -1;
 					}
 				}
@@ -744,6 +771,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 							IfegMemFree(pDecBuf);
 							pDecBuf = 0;
 						}
+						IfegMemFree(done_prefix);
+						done_prefix = 0;
 						return -1;
 					}
 				}
@@ -762,6 +791,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 							IfegMemFree(pDecBuf);
 							pDecBuf = 0;
 						}
+						IfegMemFree(done_prefix);
+						done_prefix = 0;
 						return -1;
 					}
 				}
@@ -797,6 +828,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return -1;
 			}
 #endif
@@ -822,6 +855,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 0;
 			}
 			IfegMemset(decoderline, 0, orgwdt);
@@ -838,6 +873,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 0;
 			}
 
@@ -854,6 +891,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return 0;
 			}
 			IfegMemset(pDecBuf, 0, decwdt * dechgt * 4);
@@ -910,6 +949,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 				return -1;
 			}
 
@@ -1356,8 +1397,26 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 							code = oc;
 							*sp++ = (unsigned char)fc;
 						}
+
+						IfegMemset(done_prefix, 0, sizeof(unsigned char)*(MAX_CODES+1));
 						while (code >= newcodes) {
 							*sp++ = suffix[code];
+							if ((code == prefix[code]) || (done_prefix[code] == 1))
+							{
+								thumb_err("Circular entry in table.");
+								if (decoderline != 0) {
+									IfegMemFree(decoderline);
+									decoderline = 0;
+								}
+								if (pDecBuf != 0) {
+									IfegMemFree(pDecBuf);
+									pDecBuf = 0;
+								}
+								IfegMemFree(done_prefix);
+								done_prefix = 0;
+								return 0;
+							}
+							done_prefix[code] = 1;
 							code = prefix[code];
 						}
 
@@ -1516,6 +1575,8 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					IfegMemFree(pDecBuf);
 					pDecBuf = 0;
 				}
+				IfegMemFree(done_prefix);
+				done_prefix = 0;
 
 				pFrameData->offset = inputPos;
 				pFrameData->imgCount++;

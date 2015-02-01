@@ -68,7 +68,12 @@ int __media_thumb_pop_req_queue(const char *path, bool shutdown_channel)
 			if (strncmp(path, req->path, strlen(path)) == 0) {
 				//thumb_dbg("Popped %s", path);
 				if (shutdown_channel) {
-					g_source_destroy(g_main_context_find_source_by_id(g_main_context_get_thread_default(), req->source_id));
+					GSource *source_id = g_main_context_find_source_by_id(g_main_context_get_thread_default(), req->source_id);
+					if (source_id != NULL) {
+						g_source_destroy(source_id);
+					} else {
+						thumb_err("G_SOURCE_ID is NULL");
+					}
 
 					g_io_channel_shutdown(req->channel, TRUE, NULL);
 					g_io_channel_unref(req->channel);
@@ -370,8 +375,14 @@ gboolean _media_thumb_write_socket(GIOChannel *src, GIOCondition condition, gpoi
 
 	if ((err = _media_thumb_recv_msg(sock, header_size, &recv_msg)) < 0) {
 		thumb_err("_media_thumb_recv_msg failed ");
-		g_io_channel_shutdown(src, TRUE, NULL);
-		g_io_channel_unref(src);
+//		g_io_channel_shutdown(src, TRUE, NULL);
+//		g_io_channel_unref(src);
+		if (recv_msg.origin_path_size > 0) {
+			__media_thumb_pop_req_queue(recv_msg.org_path, TRUE);
+		} else {
+			thumb_err("origin path size is wrong.");
+		}
+
 		return FALSE;
 	}
 
@@ -386,7 +397,8 @@ gboolean _media_thumb_write_socket(GIOChannel *src, GIOCondition condition, gpoi
 
 	if (data) {
 		thumbUserData* cb = (thumbUserData*)data;
-		cb->func(err, recv_msg.dst_path, cb->user_data);
+		if (cb->func != NULL)
+			cb->func(err, recv_msg.dst_path, cb->user_data);
 	}
 
 	__media_thumb_pop_req_queue(recv_msg.org_path, FALSE);

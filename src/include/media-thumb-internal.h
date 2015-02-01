@@ -67,13 +67,7 @@ typedef struct {
 
 int
 _media_thumb_image(const char *origin_path,
-					int thumb_width,
-					int thumb_height,
-					media_thumb_format format,
-					media_thumb_info *thumb_info);
-
-int
-_media_thumb_drm_image(const char *origin_path,
+					const char *thumb_path,
 					int thumb_width,
 					int thumb_height,
 					media_thumb_format format,
