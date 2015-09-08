@@ -52,7 +52,7 @@ extern "C" {
 void gen_thumb_hash_code()
 {
 	int ret = MEDIA_THUMB_ERROR_NONE;
-	const char *origin_path = "/opt/media/test.jpg";
+	const char *origin_path = "/opt/usr/media/test.jpg";
 	char hashcode[255];
 
 	ret = thumbnail_generate_hash_code(origin_path, hashcode, 255);

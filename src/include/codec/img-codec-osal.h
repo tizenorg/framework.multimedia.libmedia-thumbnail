@@ -83,7 +83,8 @@ extern "C" {
 #endif
 
 #ifndef INVALID_HOBJ
-#define INVALID_HOBJ	(-1)
+//#define INVALID_HOBJ	(-1)
+#define INVALID_HOBJ	NULL
 #endif
 
 

@@ -68,7 +68,7 @@ typedef int (*ThumbFunc) (int error_code, char* path, void* data);
  *	@see		None.
  *	@pre		None.
  *	@post		None.
- *	@remark	The database name is "/opt/dbspace/.media.db".
+ *	@remark	The database name is "/opt/usr/dbspace/.media.db".
  * 	@par example
  * 	@code
 
@@ -77,7 +77,7 @@ typedef int (*ThumbFunc) (int error_code, char* path, void* data);
 void gen_thumbs()
 {
 	int ret = MEDIA_THUMB_ERROR_NONE;
-	const char *origin_path = "/opt/media/test.jpg";
+	const char *origin_path = "/opt/usr/media/test.jpg";
 	char thumb_path[255];
 
 	ret = thumbnail_request_from_db(origin_path, thumb_path, 255);
@@ -107,7 +107,7 @@ int thumbnail_request_from_db(const char *origin_path, char *thumb_path, int max
  *	@see		None.
  *	@pre		None.
  *	@post		None.
- *	@remark	The database name is "/opt/dbspace/.media.db".
+ *	@remark	The database name is "/opt/usr/dbspace/.media.db".
  * 	@par example
  * 	@code
 
@@ -122,7 +122,7 @@ int _thumb_cb(int error_code, char *path, void *user_data)
 void gen_thumbs()
 {
 	int ret = MEDIA_THUMB_ERROR_NONE;
-	const char *origin_path = "/opt/media/test.jpg";
+	const char *origin_path = "/opt/usr/media/test.jpg";
 	char thumb_path[255];
 
 	ret = thumbnail_request_from_db_async(origin_path, _thumb_cb, NULL);
@@ -160,7 +160,7 @@ int thumbnail_request_from_db_async(const char *origin_path, ThumbFunc func, voi
 void save_thumbs()
 {
 	int ret = MEDIA_THUMB_ERROR_NONE;
-	const char *origin_path = "/opt/media/test.jpg";
+	const char *origin_path = "/opt/usr/media/test.jpg";
 	const char *thumb_path = "/my_dir/thumb.jpg";
 
 	ret = thumbnail_request_save_to_file(origin_path, thumb_path);
@@ -211,6 +211,14 @@ void extract_all_thumbs()
  */
 
 int thumbnail_request_extract_all_thumbs(void);
+
+int thumbnail_request_from_db_with_size(const char *origin_path, char *thumb_path, int max_length, int *origin_width, int *origin_height);
+
+/* Cancel APIs that a request to extract thumbnail */
+int thumbnail_request_cancel_media(const char *origin_path);
+
+/* Cancel APIs that all requests to extract thumbnail of a process */
+int thumbnail_request_cancel_all();
 
 /** @} */
 

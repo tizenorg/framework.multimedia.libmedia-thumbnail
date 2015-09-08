@@ -122,23 +122,15 @@ int main(int argc, char *argv[])
 
 	if (origin_path && (mode == 1)) {
 		printf("Test _thumbnail_get_data\n");
-		//const char *origin_path = "/opt/media/test/gif_test.gif";
-		//const char *origin_path = "/opt/media/test/praha_01.gif";
-		//const char *origin_path = "/opt/media/test/test_bmp.bmp";
-		//const char *origin_path = "/opt/media/test/normal.jpg";
-		//const char *origin_path = "/opt/media/test/high.jpg";
-		//const char *origin_path = "/opt/media/test/front.jpg";
-		//const char *origin_path = "/opt/media/test/no_rot_high.jpg";
-		//const char *origin_path = "/opt/media/test/no_rot_front.jpg";
-		//const char *origin_path = "/opt/media/test/movie1.mp4";
-		//const char *origin_path = "/opt/media/test/movie2.avi";
-
+#if 0
 		unsigned char *data = NULL;
 		int thumb_size = 0;
 		int thumb_w = 0;
 		int thumb_h = 0;
 		int origin_w = 0;
 		int origin_h = 0;
+		int alpha = FALSE;
+		bool is_saved = FALSE;
 
 		media_thumb_type thumb_type = MEDIA_THUMB_LARGE;
 		//media_thumb_type thumb_type = MEDIA_THUMB_SMALL;
@@ -149,7 +141,7 @@ int main(int argc, char *argv[])
 
 		long start = thumb_get_debug_time();
 
-		err = _thumbnail_get_data(origin_path, thumb_type, thumb_format, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h);
+		err = _thumbnail_get_data(origin_path, thumb_type, thumb_format, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h, &alpha, &is_saved);
 		if (err < 0) {
 			printf("_thumbnail_get_data failed - %d\n", err);
 			return -1;
@@ -158,19 +150,21 @@ int main(int argc, char *argv[])
 		printf("Size : %d, W:%d, H:%d\n", thumb_size, thumb_w, thumb_h);	
 		printf("Origin W:%d, Origin H:%d\n", origin_w, origin_h);
 
-		err = save_to_file_with_evas(data, thumb_w, thumb_h, is_bgra);
-		if (err < 0) {
-			printf("_thumbnail_get_data failed - %d\n", err);
-			return -1;
-		} else {
-			printf("file save success\n");
+		if (is_saved == FALSE) {
+			err = save_to_file_with_evas(data, thumb_w, thumb_h, is_bgra);
+			if (err < 0) {
+				printf("save_to_file_with_evas failed - %d\n", err);
+				return -1;
+			} else {
+				printf("file save success\n");
+			}
 		}
 
 		SAFE_FREE(data);
 
 		long end = thumb_get_debug_time();
 		printf("Time : %f\n", ((double)(end - start) / (double)CLOCKS_PER_SEC));
-
+#endif
 	} else if (mode == 2) {
 		printf("Test thumbnail_request_from_db\n");
 		//const char *origin_path = "/opt/media/test/movie1.mp4";
@@ -226,7 +220,29 @@ int main(int argc, char *argv[])
 		} else {
 			printf("thumbnail_request_extract_all_thumbs success!\n");
 		}
+	} else if (mode == 6) {
+		printf("Test thumbnail_request_cancel_media\n");
+
+		err = thumbnail_request_cancel_media(origin_path);
+		if (err < 0) {
+			printf("thumbnail_request_cancel_media failed : %d\n", err);
+			return -1;
+		} else {
+			printf("thumbnail_request_cancel_media success!\n");
+		}
+	} else if (mode == 7) {
+		printf("Test thumbnail_request_cancel_all\n");
+
+		err = thumbnail_request_cancel_all();
+		if (err < 0) {
+			printf("thumbnail_request_cancel_all failed : %d\n", err);
+			return -1;
+		} else {
+			printf("thumbnail_request_cancel_all success!\n");
+		}
 	}
+
+	thumb_dbg("Test is Completed");
 
 	return 0;
 }

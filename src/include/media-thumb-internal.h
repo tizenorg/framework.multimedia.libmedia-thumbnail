@@ -19,7 +19,7 @@
  *
  */
 
-
+#include <stdbool.h>
 #include "media-thumbnail.h"
 #include "media-thumb-error.h"
 #include "media-thumb-types.h"
@@ -43,7 +43,9 @@ typedef struct {
 	int height;
 	int origin_width;
 	int origin_height;
+	int alpha;
 	unsigned char *data;
+	bool is_saved;
 } media_thumb_info;
 
 enum Exif_Orientation {
@@ -65,6 +67,7 @@ typedef struct {
 
 int
 _media_thumb_image(const char *origin_path,
+					const char *thumb_path,
 					int thumb_width,
 					int thumb_height,
 					media_thumb_format format,
@@ -76,5 +79,15 @@ _media_thumb_video(const char *origin_path,
 					int thumb_height,
 					media_thumb_format format,
 					media_thumb_info *thumb_info);
+
+int
+_media_thumb_get_hash_name(const char *file_full_path,
+				 char *thumb_hash_path, size_t max_thumb_path);
+
+int _media_thumb_save_to_file_with_evas(unsigned char *data,
+											int w,
+											int h,
+											int alpha,
+											char *thumb_path);
 
 #endif /*_MEDIA_THUMB_INTERNAL_H_*/

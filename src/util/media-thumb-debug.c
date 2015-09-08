@@ -27,7 +27,7 @@
 
 #ifdef _PERFORMANCE_CHECK_
 static long g_time_usec = 0L;
-#endif
+
 
 #ifdef _USE_LOG_FILE_
 static FILE *g_log_fp = NULL;
@@ -92,7 +92,7 @@ void thumb_print_debug_time(char *time_string)
 	    (double)(time.tv_sec * 1000000 + time.tv_usec -
 		     g_time_usec) / CLOCKS_PER_SEC;
 
-	thumb_dbg("time [%s] : %f \n", time_string, totaltime);
+	thumb_dbg("time [%s] : %f", time_string, totaltime);
 #endif
 }
 
@@ -105,8 +105,8 @@ thumb_print_debug_time_ex(long start, long end, const char *func_name,
 
 	totaltime = (double)(end - start) / CLOCKS_PER_SEC;
 
-	thumb_dbg("time [%s: %s] : %f \n", func_name, time_string,
+	thumb_dbg("time [%s: %s] : %f", func_name, time_string,
 		      totaltime);
 #endif
 }
-
+#endif

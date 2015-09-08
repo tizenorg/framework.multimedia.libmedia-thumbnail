@@ -25,7 +25,10 @@
 #include "media-thumb-types.h"
 #include "media-thumb-internal.h"
 
-#include <sys/socket.h>
+#include "media-util-ipc.h"
+#include "media-server-ipc.h"
+
+#include <sys/un.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,17 +39,16 @@
 #ifndef _MEDIA_THUMB_IPC_H_
 #define _MEDIA_THUMB_IPC_H_
 
-#define THUMB_DAEMON_PORT 10000
-//#define MAX_PATH_SIZE 4096
-#define MAX_PATH_SIZE 2048
-
-#define TIMEOUT_SEC		10
+#define MAX_PATH_SIZE 4096
 #define MAX_TRIES		3
 
 enum {
 	THUMB_REQUEST_DB_INSERT,
 	THUMB_REQUEST_SAVE_FILE,
 	THUMB_REQUEST_ALL_MEDIA,
+	THUMB_REQUEST_CANCEL_MEDIA,
+	THUMB_REQUEST_CANCEL_ALL,
+	THUMB_REQUEST_KILL_SERVER,
 	THUMB_RESPONSE
 };
 
@@ -55,19 +57,14 @@ enum {
 	THUMB_FAIL
 };
 
-typedef struct _thumbMsg{
-	int msg_type;
-	media_thumb_type thumb_type;
-	int status;
-	int pid;
-	int thumb_size;
-	int thumb_width;
-	int thumb_height;
-	int origin_width;
-	int origin_height;
-	char org_path[MAX_PATH_SIZE];
-	char dst_path[MAX_PATH_SIZE];
-} thumbMsg;
+int
+_media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg);
+
+int
+_media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct sockaddr_un *from_addr, unsigned int *from_size);
+
+int
+_media_thumb_set_buffer(thumbMsg *req_msg, unsigned char **buf, int *buf_size);
 
 int
 _media_thumb_request(int msg_type,
@@ -82,8 +79,5 @@ _media_thumb_request_async(int msg_type,
 					media_thumb_type thumb_type,
 					const char *origin_path,
 					thumbUserData *userData);
-
-int
-_media_thumb_process(thumbMsg *req_msg, thumbMsg *res_msg);
 
 #endif /*_MEDIA_THUMB_IPC_H_*/

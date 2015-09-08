@@ -24,56 +24,63 @@
 #include "media-thumb-ipc.h"
 #include "media-thumb-util.h"
 #include "thumb-server-internal.h"
-
 #include <pthread.h>
-#include <heynoti.h>
-//#include <signal.h>
-//#include <glib-unix.h>
+#include <vconf.h>
 
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
 
-#define LOG_TAG "Thumb-Server"
-#define POWEROFF_NOTI_NAME "power_off_start" /*poeroff noti from system-server*/
+#define LOG_TAG "MEDIA_THUMBNAIL_SERVER"
 
+extern GMainLoop *g_thumb_server_mainloop;
 
-GMainLoop *g_thumb_server_mainloop = NULL;
-
+#if 0
 static void _media_thumb_signal_handler(void *user_data)
 {
 	thumb_dbg("Singal Hander for HEYNOTI \"power_off_start\"");
 
 	if (g_thumb_server_mainloop)
 		g_main_loop_quit(g_thumb_server_mainloop);
-	else 
+	else
 		exit(1);
 
 	return;
 }
+#endif
 
-
-int main()
+int main(void)
 {
 	int sockfd = -1;
+	int err = 0;
 
-    GSource *source = NULL;
+	GSource *source = NULL;
 	GIOChannel *channel = NULL;
 	GMainContext *context = NULL;
 
-	/*heynoti for power off*/
-	int err = 0;
-	int heynoti_id = heynoti_init();
-
-	heynoti_subscribe(heynoti_id, POWEROFF_NOTI_NAME, _media_thumb_signal_handler, NULL);
-
-	err = heynoti_attach_handler(heynoti_id);
+	/*set VCONFKEY_SYSMAN_POWER_OFF_STATUS callback to get noti for power off*/
+	err = _thumb_sever_poweoff_event_receiver(_thumb_daemon_power_off_cb, NULL);
 	if (err < 0)
-		thumb_err("heynoti_attach_handler failed: %d", err);
+		thumb_err("_thumb_sever_poweoff_event_receiver : %s fails", err);
+
+	/* Set VCONFKEY_SYSMAN_MMC_FORMAT callback to get noti for SD card format */
+	err = vconf_notify_key_changed(VCONFKEY_SYSMAN_MMC_FORMAT, (vconf_callback_fn) _thumb_daemon_vconf_cb, NULL);
+	if (err == -1)
+		thumb_err("vconf_notify_key_changed : %s fails", VCONFKEY_SYSMAN_MMC_FORMAT);
+
+	/* Set VCONFKEY_SYSMAN_MMC_STATUS callback to get noti when SD card is ejected */
+	err = vconf_notify_key_changed(VCONFKEY_SYSMAN_MMC_STATUS, (vconf_callback_fn) _thumb_daemon_mmc_eject_vconf_cb, NULL);
+	if (err == -1)
+		thumb_err("vconf_notify_key_changed : %s fails", VCONFKEY_SYSMAN_MMC_STATUS);
+
+	/* Set VCONFKEY_CAMERA_STATE callback to get status of camera */
+	err = vconf_notify_key_changed(VCONFKEY_CAMERA_STATE, (vconf_callback_fn) _thumb_daemon_camera_vconf_cb, NULL);
+	if (err == -1)
+		thumb_err("vconf_notify_key_changed : %s fails", VCONFKEY_CAMERA_STATE);
 
 	/* Create and bind new UDP socket */
 	if (!_thumb_server_prepare_socket(&sockfd)) {
-		thumb_err("Failed to create socket\n");
+		thumb_err("Failed to create socket");
 		return -1;
 	}
 
@@ -102,6 +109,11 @@ int main()
 	thumb_dbg("************************************");
 	thumb_dbg("*** Thumbnail server is running ***");
 	thumb_dbg("************************************");
+
+#if 1
+	if (_thumb_sever_set_power_mode(THUMB_START) == FALSE)
+		thumb_err("_thumb_sever_set_power_mode failed");
+#endif
 
 	g_main_loop_run(g_thumb_server_mainloop);
 

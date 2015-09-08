@@ -26,15 +26,15 @@
 #include <stdlib.h>
 #include <dlog.h>
 
+#include <unistd.h>
+#include <asm/unistd.h>
+#include <errno.h>
+
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
 
-
-#define _PERFORMANCE_CHECK_
-
-
-#define LOG_TAG "Media-Thumb"
+#define LOG_TAG "MEDIA_THUMBNAIL"
 
 #define FONT_COLOR_RESET    "\033[0m"
 #define FONT_COLOR_RED      "\033[31m"
@@ -45,9 +45,33 @@
 #define FONT_COLOR_CYAN     "\033[36m"
 #define FONT_COLOR_GRAY     "\033[37m"
 
-#define thumb_dbg(fmt, arg...)	 LOGD(FONT_COLOR_RESET"[%s : %d] " fmt "\n", __FUNCTION__, __LINE__, ##arg)
-#define thumb_warn(fmt, arg...)	 LOGW(FONT_COLOR_GREEN"[%s : %d] " fmt "\n", __FUNCTION__, __LINE__, ##arg)
-#define thumb_err(fmt, arg...)	 LOGE(FONT_COLOR_RED"[%s : %d] " fmt "\n", __FUNCTION__, __LINE__, ##arg)
+#define thumb_dbg(fmt, arg...)	do{ \
+		LOGD(FONT_COLOR_RESET fmt "\n", ##arg); \
+		} while(0)
+
+#define thumb_warn(fmt, arg...)	do{ \
+		LOGW(FONT_COLOR_GREEN fmt "\n", ##arg); \
+		} while(0)
+
+#define thumb_err(fmt, arg...)	do{ \
+		 LOGE(FONT_COLOR_RED fmt "\n", ##arg); \
+		} while(0)
+
+#define thumb_dbg_slog(fmt, arg...)	do{ \
+		SECURE_LOGD(FONT_COLOR_RESET fmt "\n", ##arg); \
+		} while(0)
+
+#define thumb_warn_slog(fmt, arg...)	do{ \
+		SECURE_LOGW(FONT_COLOR_GREEN fmt "\n", ##arg); \
+		} while(0)
+
+
+#define ERR_BUF_LENGHT 256
+#define thumb_stderror(fmt) do { \
+			char buf[ERR_BUF_LENGHT] = {0,}; \
+			strerror_r(errno, buf, ERR_BUF_LENGHT); \
+			LOGE(FONT_COLOR_RED fmt" : standard error [%s]", buf); \
+		} while (0)
 
 #ifdef _USE_LOG_FILE_
 void thumb_init_file_debug();

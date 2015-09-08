@@ -1,29 +1,33 @@
 Name:       libmedia-thumbnail
 Summary:    Media thumbnail service library for multimedia applications.
-Version: 0.1.44
-Release:    0
+Version: 0.1.118
+Release:    1
 Group:      utils
-License:    Apache
+License:    Apache-2.0 and public domain
 Source0:    %{name}-%{version}.tar.gz
+
+Requires: media-server
 BuildRequires: cmake
 BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(mm-fileinfo)
 BuildRequires: pkgconfig(mmutil-imgp)
 BuildRequires: pkgconfig(mmutil-jpeg)
-BuildRequires: pkgconfig(drm-client)
 BuildRequires: pkgconfig(libexif)
-BuildRequires: pkgconfig(heynoti)
 BuildRequires: pkgconfig(evas)
 BuildRequires: pkgconfig(ecore)
 BuildRequires: pkgconfig(aul)
-
+BuildRequires: pkgconfig(vconf)
+BuildRequires: pkgconfig(libmedia-utils)
+BuildRequires: pkgconfig(dbus-glib-1)
+#exclude tizen_w
+BuildRequires: pkgconfig(deviced)
+BuildRequires:  pkgconfig(capi-appfw-application)
 
 %description
 Description: Media thumbnail service library for multimedia applications.
 
 
 %package devel
-License:        Apache
 Summary:        Media thumbnail service library for multimedia applications. (development)
 Requires:       %{name}  = %{version}-%{release}
 Group:          Development/Libraries
@@ -32,7 +36,6 @@ Group:          Development/Libraries
 Description: Media thumbnail service library for multimedia applications. (development)
 
 %package -n media-thumbnail-server
-License:        Apache
 Summary:        Thumbnail generator.
 Requires:       %{name}  = %{version}-%{release}
 Group:          Development/Libraries
@@ -46,27 +49,37 @@ Description: Media Thumbnail Server.
 
 
 %build
+
+%if 0%{?sec_build_binary_debug_enable}
+export CFLAGS="$CFLAGS -DTIZEN_DEBUG_ENABLE"
+export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
+export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
+%endif
+
 cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix}
+
 make %{?jobs:-j%jobs}
 
 %install
 rm -rf %{buildroot}
 %make_install
 
-mkdir -p %{buildroot}%{_sysconfdir}/rc.d/rc5.d/
-ln -s %{_sysconfdir}/init.d/thumbsvr %{buildroot}%{_sysconfdir}/rc.d/rc5.d/S47thumbsvr
-mkdir -p %{buildroot}%{_sysconfdir}/rc.d/rc3.d/
-ln -s %{_sysconfdir}/init.d/thumbsvr %{buildroot}%{_sysconfdir}/rc.d/rc3.d/S47thumbsvr
-
-
+#License
+mkdir -p %{buildroot}/%{_datadir}/license
+cp -rf %{_builddir}/%{name}-%{version}/LICENSE %{buildroot}/%{_datadir}/license/%{name}
+cp -rf %{_builddir}/%{name}-%{version}/LICENSE %{buildroot}/%{_datadir}/license/media-thumbnail-server
 
 %files
+%manifest libmedia-thumbnail.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libmedia-thumbnail.so
 %{_libdir}/libmedia-thumbnail.so.*
 %{_libdir}/libmedia-hash.so
 %{_libdir}/libmedia-hash.so.1
 %{_libdir}/libmedia-hash.so.1.0.0
+#License
+%{_datadir}/license/%{name}
+%{_datadir}/license/media-thumbnail-server
 
 %files devel
 %defattr(-,root,root,-)
@@ -74,10 +87,8 @@ ln -s %{_sysconfdir}/init.d/thumbsvr %{buildroot}%{_sysconfdir}/rc.d/rc3.d/S47th
 %{_includedir}/media-thumbnail/*.h
 
 %files -n media-thumbnail-server
+%manifest media-thumbnail-server.manifest
 %defattr(-,root,root,-)
 %{_bindir}/media-thumbnail-server
-/usr/local/bin/test-thumb
-%attr(755,-,-) %{_sysconfdir}/init.d/thumbsvr
-%{_sysconfdir}/rc.d/rc3.d/S47thumbsvr
-%{_sysconfdir}/rc.d/rc5.d/S47thumbsvr
+#/usr/local/bin/test-thumb
 

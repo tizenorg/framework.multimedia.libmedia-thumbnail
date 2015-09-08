@@ -43,13 +43,16 @@
 
 #define MEDIA_THUMB_ERROR_NONE						0		/* No Error */
 #define MEDIA_THUMB_ERROR_INVALID_PARAMETER			-1		/* invalid parameter(s) */
-#define MEDIA_THUMB_ERROR_TOO_BIG						-2		/* Original is too big to make thumb */
-#define MEDIA_THUMB_ERROR_MM_UTIL						-3		/* Error in mm-util lib */
-#define MEDIA_THUMB_ERROR_UNSUPPORTED					-4		/* Unsupported type */
-#define MEDIA_THUMB_ERROR_NETWORK						-5		/* Error in socket */
-#define MEDIA_THUMB_ERROR_DB							-6		/* Timeout */
-#define MEDIA_THUMB_ERROR_TIMEOUT						-7		/* Timeout */
-#define MEDIA_THUMB_ERROR_HASHCODE						-8		/* Failed to generate hash code */
+#define MEDIA_THUMB_ERROR_TOO_BIG					-2		/* Original is too big to make thumb */
+#define MEDIA_THUMB_ERROR_MM_UTIL					-3		/* Error in mm-util lib */
+#define MEDIA_THUMB_ERROR_UNSUPPORTED				-4		/* Unsupported type */
+#define MEDIA_THUMB_ERROR_NETWORK					-5		/* Error in socket */
+#define MEDIA_THUMB_ERROR_DB						-6		/* Timeout */
+#define MEDIA_THUMB_ERROR_TIMEOUT					-7		/* Timeout */
+#define MEDIA_THUMB_ERROR_HASHCODE					-8		/* Failed to generate hash code */
+#define MEDIA_THUMB_ERROR_DUPLICATED_REQUEST		-9		/* Duplicated request of same path */
+#define MEDIA_THUMB_ERROR_FILE_NOT_EXIST			-10		/* Requested file does not exist */
+#define MEDIA_THUMB_ERROR_OUT_OF_MEMORY			-11		/* Error Out of memory */
 
 /**
 	@}

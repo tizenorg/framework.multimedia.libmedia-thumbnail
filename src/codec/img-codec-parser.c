@@ -85,8 +85,6 @@ ImgCodecType ImgGetInfoFile(const char *filePath, ImgImageInfo * imgInfo)
 		return IMG_CODEC_NONE;
 	}
 
-	thumb_dbg("file size : %d", fileAttrib.fileSize);
-
 	result = ImgGetInfoHFile(hFile, fileAttrib.fileSize, imgInfo);
 
 	DrmCloseFile(hFile);
@@ -447,9 +445,9 @@ ImgCodecType _ImgGetInfoStreaming(HFile hFile, unsigned long fileSize,
 		tmp = *(EncodedDataBuffer + 20);
 		/* If image is interlaced then multiple should be 2 */
 		if (tmp) {
-			thumb_dbg("Interlaced PNG Image.\n");
+			thumb_dbg("Interlaced PNG Image.");
 		}
-		thumb_dbg("IMG_CODEC_PNG\n");
+		thumb_dbg("IMG_CODEC_PNG");
 		return IMG_CODEC_PNG;
 	}
 	/***********************  BMP  *************************/
@@ -625,7 +623,7 @@ ImgCodecType _ImgGetInfoStreaming(HFile hFile, unsigned long fileSize,
 						return IMG_CODEC_UNKNOWN_TYPE;
 					}
 
-					while ((length = EncodedDataBuffer[ifegstreamctrl.buffpos++]) > 0) {	/* get the data length */
+					while ((ifegstreamctrl.buffpos < sizeof(EncodedDataBuffer)) && ((length = EncodedDataBuffer[ifegstreamctrl.buffpos++]) > 0)) {	/* get the data length */
 						if (_CheckBuffer
 						    (&ifegstreamctrl,
 						     length) == 0) {
@@ -633,6 +631,12 @@ ImgCodecType _ImgGetInfoStreaming(HFile hFile, unsigned long fileSize,
 							    ("_CheckBuffer was failed");
 							return
 							    IMG_CODEC_UNKNOWN_TYPE;
+						}
+
+						/* Check integer overflow */
+						if (ifegstreamctrl.buffpos > 0xffffffff - length) {
+							thumb_err("Prevent integer overflow..");
+							return IMG_CODEC_UNKNOWN_TYPE;
 						}
 
 						ifegstreamctrl.buffpos +=
@@ -656,36 +660,11 @@ ImgCodecType _ImgGetInfoStreaming(HFile hFile, unsigned long fileSize,
 #if 1
 				if (imagecount == 0) {
 					/* Regard the width/height of the first image block as the size of thumbnails. */
-					int img_block_w, img_block_h,
-					    img_block_left, img_block_top;
-					img_block_left =
-					    EncodedDataBuffer[ifegstreamctrl.
-							      buffpos] |
-					    (EncodedDataBuffer
-					     [ifegstreamctrl.buffpos + 1] << 8);
-					img_block_top =
-					    EncodedDataBuffer[ifegstreamctrl.
-							      buffpos +
-							      2] |
-					    (EncodedDataBuffer
-					     [ifegstreamctrl.buffpos + 3] << 8);
+					int img_block_w, img_block_h;
 
-					img_block_w =
-					    EncodedDataBuffer[ifegstreamctrl.
-							      buffpos +
-							      4] |
-					    (EncodedDataBuffer
-					     [ifegstreamctrl.buffpos + 5] << 8);
-					img_block_h =
-					    EncodedDataBuffer[ifegstreamctrl.
-							      buffpos +
-							      6] |
-					    (EncodedDataBuffer
-					     [ifegstreamctrl.buffpos + 7] << 8);
-					thumb_dbg
-					    ("Image block width : %d, Height : %d, left:%d, top:%d\n",
-					     img_block_w, img_block_h,
-					     img_block_left, img_block_top);
+					img_block_w = EncodedDataBuffer[ifegstreamctrl.buffpos + 4] |(EncodedDataBuffer[ifegstreamctrl.buffpos + 5] << 8);
+					img_block_h = EncodedDataBuffer[ifegstreamctrl.buffpos + 6] |(EncodedDataBuffer[ifegstreamctrl.buffpos + 7] << 8);
+					thumb_dbg ("Image block width : %d, Height : %d, left:%d, top:%d", img_block_w, img_block_h);
 
 					*pWidth = img_block_w;
 					*pHeight = img_block_h;
