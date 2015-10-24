@@ -35,7 +35,7 @@ int image_top_pos_N = 0;
 
 AGifFrameInfo *FastImgCreateAGIFFrameData(unsigned int width, unsigned int height, unsigned char *pEncodedData, unsigned int file_size, unsigned int ui_backcolor, BOOL bLoop)
 {
-	int header_temp;
+	unsigned int header_temp;
 	int backcolor_index;
 	unsigned int image_backcolor;
 	unsigned int backcolor_parsing;
@@ -74,7 +74,7 @@ AGifFrameInfo *FastImgCreateAGIFFrameData(unsigned int width, unsigned int heigh
 	} else {
 		header_temp = 0;
 	}
-	
+
 	if (file_size > 30+header_temp && pEncodedData[14+header_temp] == 0xFF) {
 		pFrameData->nLoopCount = pEncodedData[30+header_temp]<<8 | pEncodedData[29+header_temp];
 	} else if (file_size > 30+8+header_temp && pEncodedData[14+8+header_temp] == 0xFF) {
@@ -82,7 +82,7 @@ AGifFrameInfo *FastImgCreateAGIFFrameData(unsigned int width, unsigned int heigh
 	} else {
 		pFrameData->nLoopCount = -1;
 	}
- 	
+
 	pFrameData->nRepeatCount = 0;
 
 	thumb_dbg("10st data :  0x%x , global color table num : %d", pEncodedData[10], header_temp);
@@ -328,34 +328,6 @@ void FastImgDestroyAGIFFrameData(AGifFrameInfo *pFrameData)
 }
 
 /* macro */
-#define __get_next_code_first_nbits_left_0_no_buffer(pInputStream) \
-{\
-	{\
-		if (navail_bytes == 0) {\
-			navail_bytes = (pInputStream)[inputPos++];\
-			if ((inputPos + navail_bytes) > filesize) {\
-				if (decoderline) {\
-					IfegMemFree(decoderline);\
-					decoderline = 0;\
-				} \
-				if (pDecBuf) {\
-					IfegMemFree(pDecBuf);\
-					pDecBuf = 0;\
-				} \
-				if (done_prefix) {\
-					IfegMemFree(done_prefix);\
-					done_prefix = 0;\
-				} \
-				return -1;\
-			} \
-		} \
-		b1 = (pInputStream)[inputPos++];\
-		ret = b1;\
-		nbits_left = 8;\
-		--navail_bytes;\
-	} \
-}
-
 #define __get_next_code_first_nbits_left_0(pInputStream) \
 {\
 	{\
@@ -380,16 +352,9 @@ void FastImgDestroyAGIFFrameData(AGifFrameInfo *pFrameData)
 	} \
 }
 
-#define __get_next_code_first_nbits_left_not_0(pInputStream) \
+#define __get_next_code_first_nbits_left_0_nobuffer(pInputStream) \
 {\
 	{\
-		ret = b1 >> (8 - nbits_left); \
-	} \
-}
-
-#define __get_next_code_first_while_no_buffer(pInputStream) \
-{\
-	while (curr_size > nbits_left) {\
 		if (navail_bytes == 0) {\
 			navail_bytes = (pInputStream)[inputPos++];\
 			if ((inputPos + navail_bytes) > filesize) {\
@@ -409,13 +374,17 @@ void FastImgDestroyAGIFFrameData(AGifFrameInfo *pFrameData)
 			} \
 		} \
 		b1 = (pInputStream)[inputPos++];\
-		ret |= b1 << nbits_left;\
-		nbits_left += 8;\
+		ret = b1;\
+		nbits_left = 8;\
 		--navail_bytes;\
 	} \
-	nbits_left -= curr_size;\
-	ret &= (1<<curr_size)-1;\
-	c = ret;\
+}
+
+#define __get_next_code_first_nbits_left_not_0(pInputStream) \
+{\
+	{\
+		ret = b1 >> (8 - nbits_left); \
+	} \
 }
 
 #define __get_next_code_first_while(pInputStream) \
@@ -431,6 +400,37 @@ void FastImgDestroyAGIFFrameData(AGifFrameInfo *pFrameData)
 				if (pDecBuf) {\
 					IfegMemFree(pDecBuf);\
 					pDecBuf = 0;\
+				} \
+				return -1;\
+			} \
+		} \
+		b1 = (pInputStream)[inputPos++];\
+		ret |= b1 << nbits_left;\
+		nbits_left += 8;\
+		--navail_bytes;\
+	} \
+	nbits_left -= curr_size;\
+	ret &= (1<<curr_size)-1;\
+	c = ret;\
+}
+
+#define __get_next_code_first_while_nobuffer(pInputStream) \
+{\
+	while (curr_size > nbits_left) {\
+		if (navail_bytes == 0) {\
+			navail_bytes = (pInputStream)[inputPos++];\
+			if ((inputPos + navail_bytes) > filesize) {\
+				if (decoderline) {\
+					IfegMemFree(decoderline);\
+					decoderline = 0;\
+				} \
+				if (pDecBuf) {\
+					IfegMemFree(pDecBuf);\
+					pDecBuf = 0;\
+				} \
+				if (done_prefix) {\
+					IfegMemFree(done_prefix);\
+					done_prefix = 0;\
 				} \
 				return -1;\
 			} \
@@ -558,9 +558,9 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 	unsigned int *global_dacbox = pFrameData->pGlobal_table;
 	register unsigned char *pInputStream = pFrameData->pEncodedData;
 	void *pOutBits = pFrameData->pOutBits;
-	unsigned short *prefix = pFrameData->pPrefix;			
-	unsigned char *dstack = pFrameData->pDstack;			
-	unsigned char *suffix = pFrameData->pSuffix;		
+	unsigned short *prefix = pFrameData->pPrefix;
+	unsigned char *dstack = pFrameData->pDstack;
+	unsigned char *suffix = pFrameData->pSuffix;
 	unsigned char *done_prefix = 0;
 
 	inputPos = pFrameData->offset;
@@ -748,7 +748,7 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				for (i = 0; i < expected_width * expected_height; i++) {
 					*pImage16++ = ui_backcolor;
 				}
-				
+
 				inputPos = pFrameData->offset;
 				continue;
 			} else {
@@ -795,7 +795,7 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				transparent = pInputStream[inputPos++] & 0x01;	/* does it use? 1:on 0:off */
 				pFrameData->delay = (pInputStream[inputPos] | (pInputStream[inputPos+1] << 8))*10;
 				inputPos += 2; /* Delay time (skip) */
-				transIndex = pInputStream[inputPos++]; 
+				transIndex = pInputStream[inputPos++];
 				inputPos++; /* block end */
 				break;
 
@@ -922,7 +922,7 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 
 			decwdt = ((orgwdt * resized_width+logi_wdt-1) / logi_wdt);
 			dechgt = ((orghgt * resized_height+logi_hgt-1) / logi_hgt);
-			
+
 			if (!decwdt || !dechgt) {
 				if (decoderline != 0) {
 					IfegMemFree(decoderline);
@@ -1035,20 +1035,20 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 			/* __get_next_code(pInputStream) */
 			if (navail_bytes < 2) {
 				if (nbits_left == 0) {
-					__get_next_code_first_nbits_left_0_no_buffer(pInputStream)
+					__get_next_code_first_nbits_left_0_nobuffer(pInputStream)
 				} else
 					__get_next_code_first_nbits_left_not_0(pInputStream)
 
-				__get_next_code_first_while_no_buffer(pInputStream)
+				__get_next_code_first_while_nobuffer(pInputStream)
 			} else {
-				if (nbits_left == 0) 
+				if (nbits_left == 0)
 					__get_next_code_second_nbits_left_0(pInputStream)
 				else
 					__get_next_code_second_nbits_left_not_0(pInputStream)
-				
+
 				__get_next_code_second_while(pInputStream)
-			}		
-			
+			}
+
 			if (c == ending) {
 				break;
 			}
@@ -1063,20 +1063,20 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 					/* __get_next_code(pInputStream); */
 					if (navail_bytes < 2) {
 						if (nbits_left == 0)
-							__get_next_code_first_nbits_left_0_no_buffer(pInputStream)
+							__get_next_code_first_nbits_left_0_nobuffer(pInputStream)
 						else
 							__get_next_code_first_nbits_left_not_0(pInputStream)
 
-						__get_next_code_first_while_no_buffer(pInputStream)
+						__get_next_code_first_while_nobuffer(pInputStream)
 					} else {
-						if (nbits_left == 0) 
+						if (nbits_left == 0)
 							__get_next_code_second_nbits_left_0(pInputStream)
 						else
 							__get_next_code_second_nbits_left_not_0(pInputStream)
 
 						__get_next_code_second_while(pInputStream)
 					}
-			
+
 				} while (c == clear);
 
 				if (c == ending) {
@@ -1398,12 +1398,12 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 				/* __get_next_code(pInputStream) */
 				if (navail_bytes < 2) {
 					if (nbits_left == 0)
-						__get_next_code_first_nbits_left_0_no_buffer(pInputStream)
+						__get_next_code_first_nbits_left_0_nobuffer(pInputStream)
 					else
 						__get_next_code_first_nbits_left_not_0(pInputStream)
-					__get_next_code_first_while_no_buffer(pInputStream)
+					__get_next_code_first_while_nobuffer(pInputStream)
 				} else {
-					if (nbits_left == 0) 
+					if (nbits_left == 0)
 						__get_next_code_second_nbits_left_0(pInputStream)
 					else
 						__get_next_code_second_nbits_left_not_0(pInputStream)
@@ -1425,18 +1425,18 @@ int __FastImgGetNextFrameAGIF_NoBuffer(AGifFrameInfo *pFrameData, BOOL bCenterAl
 						/* __get_next_code(pInputStream); */
 						if (navail_bytes < 2) {
 							if (nbits_left == 0)
-								__get_next_code_first_nbits_left_0_no_buffer(pInputStream)
+								__get_next_code_first_nbits_left_0_nobuffer(pInputStream)
 							else
 								__get_next_code_first_nbits_left_not_0(pInputStream)
-							__get_next_code_first_while_no_buffer(pInputStream)
+							__get_next_code_first_while_nobuffer(pInputStream)
 						} else {
-							if (nbits_left == 0) 
+							if (nbits_left == 0)
 								__get_next_code_second_nbits_left_0(pInputStream)
 							else
 								__get_next_code_second_nbits_left_not_0(pInputStream)
 
 							__get_next_code_second_while(pInputStream)
-						}		
+						}
 					} while (c == clear);
 
 					if (c == ending) {
@@ -1732,9 +1732,9 @@ int __FastImgGetNextFrameAGIF_UseBuffer(AGifFrameInfo *pFrameData, BOOL bCenterA
 	unsigned int *global_dacbox = pFrameData->pGlobal_table;
 	unsigned char *pInputStream = pFrameData->pEncodedData;
 	void *pOutBits = pFrameData->pOutBits;
-	unsigned short *prefix = pFrameData->pPrefix;			
-	unsigned char *dstack = pFrameData->pDstack;		
-	unsigned char *suffix = pFrameData->pSuffix;		
+	unsigned short *prefix = pFrameData->pPrefix;
+	unsigned char *dstack = pFrameData->pDstack;
+	unsigned char *suffix = pFrameData->pSuffix;
 	int filesize = pFrameData->inputSize;
 
 	inputPos = pFrameData->offset;
@@ -1746,7 +1746,7 @@ int __FastImgGetNextFrameAGIF_UseBuffer(AGifFrameInfo *pFrameData, BOOL bCenterA
 	ui_backcolor565 = pFrameData->ui_backcolor;
 
 	backcolor565 = pFrameData->backcolor;
-	backcolor888 = 
+	backcolor888 =
 		((backcolor565&0xf800) << 6)|
 		((backcolor565&0x7e0) << 3)|
 		((backcolor565&0x1f) << 1);

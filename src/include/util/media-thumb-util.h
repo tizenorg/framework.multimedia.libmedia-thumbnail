@@ -19,40 +19,49 @@
  *
  */
 
-#include "media-thumb-error.h"
-#include "media-thumb-types.h"
-#include "media-thumb-debug.h"
+#include "media-util.h"
 
 #ifndef _MEDIA_THUMB_UTIL_H_
 #define _MEDIA_THUMB_UTIL_H_
 
 #define SAFE_FREE(src)      { if(src) {free(src); src = NULL;}}
+#define THUMB_MALLOC(src, size)	{ if (size <= 0) {src = NULL;} \
+							else { src = malloc(size); if(src) memset(src, 0x0, size);} }
 
-int
-_media_thumb_get_store_type_by_path(const char *full_path);
+typedef enum {
+	MEDIA_THUMB_BGRA,			/* BGRA, especially provided for evas users */
+	MEDIA_THUMB_RGB888,			/* RGB888 */
+} media_thumb_format;
 
-int
-_media_thumb_get_file_ext(const char *file_path, char *file_ext, int max_len);
+#define THUMB_NONE_TYPE    -1	/* None */
+#define THUMB_IMAGE_TYPE   0	/* Image */
+#define THUMB_VIDEO_TYPE   1	/* Video */
 
-int
-_media_thumb_get_file_type(const char *file_full_path, int *is_drm);
+#define THUMB_PATH_PHONE 	MEDIA_ROOT_PATH_INTERNAL 	/**< File path prefix of files stored in phone */
+#define THUMB_PATH_MMC 		MEDIA_ROOT_PATH_SDCARD		/**< File path prefix of files stored in mmc card */
 
-char*
-_media_thumb_generate_hash_name(const char *file);
+#define THUMB_PHONE_PATH	MEDIA_THUMB_ROOT_PATH"/.thumb/phone"
+#define THUMB_MMC_PATH		MEDIA_THUMB_ROOT_PATH"/.thumb/mmc"
 
-int
-_media_thumb_get_hash_name(const char *file_full_path,
-				 char *thumb_hash_path, size_t max_thumb_path);
+#define THUMB_DEFAULT_PATH	MEDIA_THUMB_ROOT_PATH"/.thumb/thumb_default.png"
 
+typedef enum
+{
+	THUMB_PHONE,			/**< Stored only in phone */
+	THUMB_MMC				/**< Stored only in MMC */
+} media_thumb_store_type;
 
-int
-_media_thumb_get_width(media_thumb_type thumb_type);
+int _media_thumb_get_store_type_by_path(const char *full_path);
 
-int
-_media_thumb_get_height(media_thumb_type thumb_type);
+int _media_thumb_get_file_ext(const char *file_path, char *file_ext, int max_len);
 
-int
-_media_thumb_remove_file(const char *path);
+int _media_thumb_get_file_type(const char *file_full_path, int *is_drm);
+
+char* _media_thumb_generate_hash_name(const char *file);
+
+int _media_thumb_get_hash_name(const char *file_full_path, char *thumb_hash_path, size_t max_thumb_path);
+
+int _media_thumb_remove_file(const char *path);
 
 #endif /*_MEDIA_THUMB_UTIL_H_*/
 

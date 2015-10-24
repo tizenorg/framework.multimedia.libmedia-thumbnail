@@ -20,14 +20,6 @@
  */
 
 
-#include "media-thumb-error.h"
-#include "media-thumb-debug.h"
-#include "media-thumb-types.h"
-#include "media-thumb-internal.h"
-
-#include "media-util-ipc.h"
-#include "media-server-ipc.h"
-
 #include <sys/un.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
@@ -35,6 +27,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+
+#include "media-thumb-internal.h"
+#include "media-util-ipc.h"
+#include "media-server-ipc.h"
 
 #ifndef _MEDIA_THUMB_IPC_H_
 #define _MEDIA_THUMB_IPC_H_
@@ -49,7 +45,11 @@ enum {
 	THUMB_REQUEST_CANCEL_MEDIA,
 	THUMB_REQUEST_CANCEL_ALL,
 	THUMB_REQUEST_KILL_SERVER,
-	THUMB_RESPONSE
+	THUMB_RESPONSE,
+	THUMB_REQUEST_RAW_DATA,
+	THUMB_REQUEST_CANCEL_RAW_DATA,
+	THUMB_REQUEST_CANCEL_ALL_RAW_DATA,
+	THUMB_RESPONSE_RAW_DATA,
 };
 
 enum {
@@ -57,27 +57,33 @@ enum {
 	THUMB_FAIL
 };
 
-int
-_media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg);
+int _media_thumb_recv_msg(int sock, int header_size, thumbMsg *msg);
 
-int
-_media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct sockaddr_un *from_addr, unsigned int *from_size);
+int _media_thumb_recv_udp_msg(int sock, int header_size, thumbMsg *msg, struct sockaddr_un *from_addr, unsigned int *from_size);
 
-int
-_media_thumb_set_buffer(thumbMsg *req_msg, unsigned char **buf, int *buf_size);
+int _media_thumb_set_buffer(thumbMsg *req_msg, unsigned char **buf, int *buf_size);
 
-int
-_media_thumb_request(int msg_type,
-					media_thumb_type thumb_type,
+int _media_thumb_set_buffer_for_response(thumbMsg *req_msg, unsigned char **buf, int *buf_size);
+
+int _media_thumb_set_add_raw_data_buffer(thumbRawAddMsg *req_msg, unsigned char **buf, int *buf_size);
+
+int _media_thumb_request(int msg_type,
 					const char *origin_path,
 					char *thumb_path,
 					int max_length,
 					media_thumb_info *thumb_info);
 
-int
-_media_thumb_request_async(int msg_type,
-					media_thumb_type thumb_type,
+int _media_thumb_request_async(int msg_type,
 					const char *origin_path,
 					thumbUserData *userData);
+
+int _media_thumb_request_raw_data_async(int msg_type,
+					int request_id,
+					const char *origin_path,
+					int width,
+					int height,
+					thumbRawUserData *userData);
+
+int _media_thumb_request_cancel_all(bool isRaw);
 
 #endif /*_MEDIA_THUMB_IPC_H_*/

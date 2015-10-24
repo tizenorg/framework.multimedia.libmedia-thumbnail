@@ -1,8 +1,4 @@
 SET(THUMB-SERVER
-        ../src/codec/IfegDecodeAGIF.c
-        ../src/codec/img-codec.c
-        ../src/codec/img-codec-osal.c
-        ../src/codec/img-codec-parser.c
         ../src/util/media-thumb-db.c
 	    ../src/media-thumb-internal.c
 	    thumb-server.c

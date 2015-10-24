@@ -10,6 +10,10 @@ SET(SRCS
 	src/util/media-thumb-debug.c
 	src/util/media-thumb-util.c
 	src/ipc/media-thumb-ipc.c
+	src/codec/IfegDecodeAGIF.c
+	src/codec/img-codec.c
+	src/codec/img-codec-osal.c
+	src/codec/img-codec-parser.c
 	)
 SET(HASH_SRCS
 	md5/md5.c
@@ -35,7 +39,7 @@ MESSAGE("Build type: ${CMAKE_BUILD_TYPE}")
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/include/util ${CMAKE_SOURCE_DIR}/src/include/codec ${CMAKE_SOURCE_DIR}/src/include/util ${CMAKE_SOURCE_DIR}/src/include/ipc ${CMAKE_SOURCE_DIR}/server/include ${CMAKE_SOURCE_DIR}/md5)
 
 INCLUDE(FindPkgConfig)
-	pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 dlog mm-fileinfo aul libexif ecore-evas evas mmutil-imgp mmutil-jpeg libmedia-utils vconf dbus-glib-1 deviced)
+	pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 dlog sqlite3 mm-fileinfo aul libexif ecore-evas evas mmutil-imgp mmutil-jpeg libmedia-utils vconf dbus-glib-1 deviced)
 
 FOREACH(flag ${pkgs_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
@@ -80,8 +84,6 @@ ADD_SUBDIRECTORY(server)
 ADD_SUBDIRECTORY(test)
 
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/media-thumbnail.h DESTINATION include/${MEDIATHUMB-LIB})
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/media-thumbnail-private.h DESTINATION include/${MEDIATHUMB-LIB})
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/media-thumb-error.h DESTINATION include/${MEDIATHUMB-LIB})
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/media-thumb-types.h DESTINATION include/${MEDIATHUMB-LIB})
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/include/codec/img-codec-parser.h DESTINATION include/${MEDIATHUMB-LIB})
 #INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/thumbsvr DESTINATION /etc/init.d)
 

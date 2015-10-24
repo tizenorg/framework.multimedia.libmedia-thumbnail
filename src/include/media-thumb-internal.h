@@ -20,10 +20,9 @@
  */
 
 #include <stdbool.h>
+#include <media-util-err.h>
 #include "media-thumbnail.h"
-#include "media-thumb-error.h"
-#include "media-thumb-types.h"
-#include "media-thumb-debug.h"
+#include "media-thumb-util.h"
 
 #ifndef _MEDIA_THUMB_INTERNAL_H_
 #define _MEDIA_THUMB_INTERNAL_H_
@@ -65,23 +64,26 @@ typedef struct {
 	void *user_data;
 } thumbUserData;
 
-int
-_media_thumb_image(const char *origin_path,
+typedef struct {
+	ThumbRawFunc func;
+	void *user_data;
+} thumbRawUserData;
+
+int _media_thumb_image(const char *origin_path,
 					const char *thumb_path,
 					int thumb_width,
 					int thumb_height,
 					media_thumb_format format,
-					media_thumb_info *thumb_info);
+					media_thumb_info *thumb_info,
+					bool is_req_raw);
 
-int
-_media_thumb_video(const char *origin_path,
+int _media_thumb_video(const char *origin_path,
 					int thumb_width,
 					int thumb_height,
 					media_thumb_format format,
 					media_thumb_info *thumb_info);
 
-int
-_media_thumb_get_hash_name(const char *file_full_path,
+int _media_thumb_get_hash_name(const char *file_full_path,
 				 char *thumb_hash_path, size_t max_thumb_path);
 
 int _media_thumb_save_to_file_with_evas(unsigned char *data,

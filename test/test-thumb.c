@@ -29,7 +29,7 @@
 #include <mm_util_jpeg.h>
 
 #include "media-thumbnail.h"
-#include "media-thumbnail-private.h"
+#include "thumb-server-internal.h"
 #include "media-thumb-debug.h"
 #include "media-thumb-ipc.h"
 #include "media-thumb-util.h"
@@ -131,17 +131,16 @@ int main(int argc, char *argv[])
 		int origin_h = 0;
 		int alpha = FALSE;
 		bool is_saved = FALSE;
+        char *thumb_path = "thumbnail_path.jpg";
 
-		media_thumb_type thumb_type = MEDIA_THUMB_LARGE;
-		//media_thumb_type thumb_type = MEDIA_THUMB_SMALL;
 		media_thumb_format thumb_format = MEDIA_THUMB_BGRA;
 		//media_thumb_format thumb_format = MEDIA_THUMB_RGB888;
 		int is_bgra = 1;
 		//int is_bgra = 0;
 
-		long start = thumb_get_debug_time();
+		//long start = thumb_get_debug_time();
 
-		err = _thumbnail_get_data(origin_path, thumb_type, thumb_format, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h, &alpha, &is_saved);
+		err = _thumbnail_get_data(origin_path, thumb_format, thumb_path, &data, &thumb_size, &thumb_w, &thumb_h, &origin_w, &origin_h, &alpha, &is_saved);
 		if (err < 0) {
 			printf("_thumbnail_get_data failed - %d\n", err);
 			return -1;
@@ -162,8 +161,8 @@ int main(int argc, char *argv[])
 
 		SAFE_FREE(data);
 
-		long end = thumb_get_debug_time();
-		printf("Time : %f\n", ((double)(end - start) / (double)CLOCKS_PER_SEC));
+		//long end = thumb_get_debug_time();
+		//printf("Time : %f\n", ((double)(end - start) / (double)CLOCKS_PER_SEC));
 #endif
 	} else if (mode == 2) {
 		printf("Test thumbnail_request_from_db\n");
@@ -190,7 +189,7 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 
-		err = thumbnail_request_save_to_file(origin_path, MEDIA_THUMB_LARGE, thumb_path);
+		err = thumbnail_request_save_to_file(origin_path, thumb_path);
 		if (err < 0) {
 			printf("thumbnail_request_save_to_file failed : %d\n", err);
 			return -1;
@@ -198,22 +197,11 @@ int main(int argc, char *argv[])
 
 		printf("Success!!\n");
 	} else if (origin_path && mode == 4) {
-		printf("Test thumbnail_generate_hash_code\n");
-		char hash[255] = {0,};
-
-		err = thumbnail_generate_hash_code(origin_path, hash, sizeof(hash));
-		if (err < 0) {
-			printf("thumbnail_generate_hash_code failed : %d\n", err);
-			return -1;
-		} else {
-			printf("Hash : %s\n", hash);
-		}
-
 		printf("Success!!\n");
 	} else if (mode == 5) {
 		printf("Test thumbnail_request_extract_all_thumbs\n");
 
-		err = thumbnail_request_extract_all_thumbs();
+		err = thumbnail_request_extract_all_thumbs(NULL);
 		if (err < 0) {
 			printf("thumbnail_request_extract_all_thumbs failed : %d\n", err);
 			return -1;
@@ -233,7 +221,7 @@ int main(int argc, char *argv[])
 	} else if (mode == 7) {
 		printf("Test thumbnail_request_cancel_all\n");
 
-		err = thumbnail_request_cancel_all();
+		err = thumbnail_request_cancel_all(false);
 		if (err < 0) {
 			printf("thumbnail_request_cancel_all failed : %d\n", err);
 			return -1;

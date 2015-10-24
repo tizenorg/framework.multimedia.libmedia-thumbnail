@@ -25,7 +25,7 @@
 #include <mm_util_imgp.h>
 
 unsigned int *ImgGetFirstFrameAGIFAtSize(const char *szFileName,
-					 ImgImageInfo *image_info)
+					 unsigned int width, unsigned int height)
 {
 	AGifFrameInfo *pFrameInfo = 0;
 	void *pDecodedRGB888Buf = 0;
@@ -37,15 +37,15 @@ unsigned int *ImgGetFirstFrameAGIFAtSize(const char *szFileName,
 		return NULL;
 	}
 
-	if (image_info == NULL) {
+	if (width == 0 || height == 0) {
 		thumb_err
-		    ("ImgGetFirstFrameAGIFAtSize: Input ImgImageInfo is NULL");
+		    ("ImgGetFirstFrameAGIFAtSize: Input width or height is zero");
 		return NULL;
 	}
 
 	pFrameInfo =
-	    ImgCreateAGIFFrame(szFileName, image_info->width,
-			       image_info->height, 0, FALSE);
+	    ImgCreateAGIFFrame(szFileName, width,
+			       height, 0, FALSE);
 
 	if (pFrameInfo && pFrameInfo->pOutBits) {
 		ImgGetNextAGIFFrame(pFrameInfo, TRUE);
@@ -61,7 +61,7 @@ unsigned int *ImgGetFirstFrameAGIFAtSize(const char *szFileName,
 
 				unsigned int i = 0;
 
-				if (mm_util_get_image_size(MM_UTIL_IMG_FMT_RGB888, image_info->width, image_info->height, &i) < 0) {
+				if (mm_util_get_image_size(MM_UTIL_IMG_FMT_RGB888, width, height, &i) < 0) {
 					thumb_err("ImgGetFirstFrameAGIFAtSize: Failed to get buffer size");
 					return NULL;
 				}
@@ -189,6 +189,7 @@ AGifFrameInfo *ImgCreateAGIFFrame(const char *szFileName, unsigned int width,
 		DrmCloseFile(hFile);
 		return NULL;
 	}
+	memset(pEncodedData,0,mem_alloc_size);
 	/* coverity[ -tainted_data_argument : pEncodedData ] */
 	if (DrmReadFile(hFile, pEncodedData, mem_alloc_size, &size) == FALSE) {
 		thumb_err("DrmReadFile was failed");

@@ -21,6 +21,7 @@
 
 #include "media-thumb-util.h"
 #include "media-thumb-internal.h"
+#include "media-thumb-debug.h"
 
 #include <glib.h>
 #include <aul.h>
@@ -31,10 +32,10 @@ _media_thumb_get_file_type(const char *file_full_path, int *is_drm)
 {
 	int ret = 0;
 	char mimetype[255] = {0,};
-	char *unsupported_type = "image/tiff";
+	const char *unsupported_type = "image/tiff";
 
 	if (file_full_path == NULL)
-		return MEDIA_THUMB_ERROR_INVALID_PARAMETER;
+		return MS_MEDIA_ERR_INVALID_PARAMETER;
 
 	/* get content type and mime type from file. */
 	ret = aul_get_mime_from_file(file_full_path, mimetype, sizeof(mimetype));
@@ -43,7 +44,7 @@ _media_thumb_get_file_type(const char *file_full_path, int *is_drm)
 			("aul_get_mime_from_file fail.. Now trying to get type by extension");
 
 		char ext[255] = { 0 };
-		int ret = _media_thumb_get_file_ext(file_full_path, ext, sizeof(ext));
+		ret = _media_thumb_get_file_ext(file_full_path, ext, sizeof(ext));
 		if (ret < 0) {
 			thumb_err("_media_thumb_get_file_ext failed");
 			return THUMB_NONE_TYPE;
@@ -100,28 +101,6 @@ int _media_thumb_get_store_type_by_path(const char *full_path)
 	return -1;
 }
 
-int _media_thumb_get_width(media_thumb_type thumb_type)
-{
-	if (thumb_type == MEDIA_THUMB_LARGE) {
-		return THUMB_LARGE_WIDTH;
-	} else if (thumb_type == MEDIA_THUMB_SMALL) {
-		return  THUMB_SMALL_WIDTH;
-	} else {
-		return -1;
-	}
-}
-
-int _media_thumb_get_height(media_thumb_type thumb_type)
-{
-	if (thumb_type == MEDIA_THUMB_LARGE) {
-		return THUMB_LARGE_HEIGHT;
-	} else if (thumb_type == MEDIA_THUMB_SMALL) {
-		return  THUMB_SMALL_HEIGHT;
-	} else {
-		return -1;
-	}
-}
-
 int _media_thumb_remove_file(const char *path)
 {
 	int result = -1;
@@ -140,8 +119,8 @@ int _media_thumb_get_file_ext(const char *file_path, char *file_ext, int max_len
 {
 	int i = 0;
 
-	for (i = strlen(file_path); i >= 0; i--) {
-		if ((file_path[i] == '.') && (i < strlen(file_path))) {
+	for (i = (int)strlen(file_path); i >= 0; i--) {
+		if ((file_path[i] == '.') && (i < (int)strlen(file_path))) {
 			strncpy(file_ext, &file_path[i + 1], max_len);
 			return 0;
 		}
@@ -154,4 +133,3 @@ int _media_thumb_get_file_ext(const char *file_path, char *file_ext, int max_len
 
 	return -1;
 }
-

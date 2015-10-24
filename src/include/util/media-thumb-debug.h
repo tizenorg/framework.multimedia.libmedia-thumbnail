@@ -68,9 +68,9 @@
 
 #define ERR_BUF_LENGHT 256
 #define thumb_stderror(fmt) do { \
-			char buf[ERR_BUF_LENGHT] = {0,}; \
-			strerror_r(errno, buf, ERR_BUF_LENGHT); \
-			LOGE(FONT_COLOR_RED fmt" : standard error [%s]", buf); \
+			char thumb_stderror_buffer[ERR_BUF_LENGHT] = {0,}; \
+			strerror_r(errno, thumb_stderror_buffer, ERR_BUF_LENGHT); \
+			LOGE(FONT_COLOR_RED fmt" : standard error [%s]", thumb_stderror_buffer); \
 		} while (0)
 
 #ifdef _USE_LOG_FILE_
