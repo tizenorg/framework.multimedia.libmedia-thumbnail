@@ -816,9 +816,14 @@ int _media_thumb_send_request() {
 	/* Connecting to the thumbnail server */
 	if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
 		thumb_stderror("connect");
+		if (errno == EACCES)
+			err = MS_MEDIA_ERR_PERMISSION_DENIED;
+		else
+			err = MS_MEDIA_ERR_SOCKET_CONN;
+
 		g_io_channel_shutdown(channel, TRUE, NULL);
 		g_io_channel_unref(channel);
-		return MS_MEDIA_ERR_SOCKET_CONN;
+		return err;
 	}
 	req_manager = (thumbReq *)g_queue_pop_head(g_manage_queue);
 	GSource *source = NULL;
@@ -917,9 +922,14 @@ int _media_thumb_raw_data_send_request() {
 	/* Connecting to the thumbnail server */
 	if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
 		thumb_stderror("connect error");
+		if (errno == EACCES)
+			err = MS_MEDIA_ERR_PERMISSION_DENIED;
+		else
+			err = MS_MEDIA_ERR_SOCKET_CONN;
+
 		g_io_channel_shutdown(channel, TRUE, NULL);
 		g_io_channel_unref(channel);
-		return MS_MEDIA_ERR_SOCKET_CONN;
+		return err;
 	}
 
 	req_manager = (thumbRawReq *)g_queue_pop_head(g_manage_raw_queue);
